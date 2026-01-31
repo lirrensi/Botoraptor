@@ -45,14 +45,69 @@ Most bot frameworks provide no built-in interface for monitoring customer conver
 
 ## Quick Start
 
-### 1. Clone and Set Up
+### Option 1: Docker Compose (Recommended for Production)
+
+The easiest way to deploy ChatLayer is using Docker Compose. This will automatically build the frontend, initialize the database, and start the server.
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/lirrensi/ChatLayer.git
+cd ChatLayer
+
+# 2. Configure the server
+# Edit server/config/server.json to set your API keys
+nano server/config/server.json
+
+# 3. Set environment variables
+# Create a .env file in the project root with your file signing secret
+echo "FILE_SIGNING_SECRET=your-super-secret-key-here" > .env
+
+# 4. Start with Docker Compose
+docker-compose up -d
+
+# 5. Check the logs
+docker-compose logs -f chatlayer
+```
+
+The server will start on `http://localhost:31000` and serve the web UI at `/`.
+
+**Docker Compose Features:**
+- ✅ Automatically builds frontend and backend
+- ✅ Initializes database on first run
+- ✅ Persists database and uploaded files in Docker volumes
+- ✅ Health checks for monitoring
+- ✅ Easy configuration via mounted config directory
+- ✅ Automatic restart on failure
+
+For detailed Docker deployment instructions, see [DOCKER.md](DOCKER.md).
+
+**Managing the Docker deployment:**
+```bash
+# Stop the service
+docker-compose down
+
+# View logs
+docker-compose logs -f chatlayer
+
+# Rebuild after code changes
+docker-compose up -d --build
+
+# Access the container shell
+docker-compose exec chatlayer sh
+```
+
+### Option 2: Manual Installation (Clone + Run)
+
+For development or custom deployments, you can install and run ChatLayer manually.
+
+#### 1. Clone and Set Up
 
 ```bash
 git clone https://github.com/lirrensi/ChatLayer.git
 cd ChatLayer
 ```
 
-### 2. Configure the Server
+#### 2. Configure the Server
 
 Edit `server/config/server.json`:
 
@@ -72,18 +127,40 @@ Set the file signing secret in `server/.env`:
 FILE_SIGNING_SECRET=your-super-secret-key-here
 ```
 
-### 3. Set Up the Database
+#### 3. Build the Frontend
+
+The web UI must be built before starting the server:
+
+```bash
+cd web_ui
+pnpm install
+pnpm run build
+cd ..
+```
+
+The build process automatically copies the frontend files to `server/public/`.
+
+#### 4. Set Up the Database
+
+Initialize the database using Prisma:
 
 ```bash
 cd server
 pnpm install
-pnpm run db:push
+pnpm run generate  # Generate Prisma client
+pnpm run db:push   # Initialize database schema
 ```
 
-### 4. Start the Server
+**Note:** The database file will be created in `server/db/dev.db` (or `main.db` if `NODE_ENV=production`).
+
+#### 5. Start the Server
 
 ```bash
+# Development mode (with hot reload)
 pnpm run dev
+
+# Or production mode
+NODE_ENV=production pnpm run start:prod
 ```
 
 The server will start on `http://localhost:31000` and serve the web UI at `/`.
@@ -281,24 +358,43 @@ ChatLayer is designed to be self-contained:
 ### Production Checklist
 
 - [ ] Change default API keys in `config/server.json`
-- [ ] Set a strong `FILE_SIGNING_SECRET` in `.env`
+- [ ] Set a strong `FILE_SIGNING_SECRET` in `.env` (or Docker environment)
 - [ ] Configure appropriate `maxFileSize` and `fileTTLSeconds`
 - [ ] Set up webhooks if needed
 - [ ] Deploy behind a reverse proxy (nginx, Apache)
 - [ ] Enable HTTPS
 - [ ] Restrict web UI access to trusted network or use authentication
+- [ ] Set up proper backup strategy for database and uploaded files
+- [ ] Configure log rotation and monitoring
+- [ ] Review and adjust resource limits (CPU, memory)
 
-### Docker (Optional)
+### Docker Deployment
 
-You can containerize the application:
+For Docker deployment, use the provided Docker Compose setup (see Quick Start - Option 1). The Docker Compose configuration includes:
 
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY . .
-RUN cd server && pnpm install && pnpm run build
-RUN cd web_ui && pnpm install && pnpm run build
-CMD ["node", "server/dist/server.js"]
+- **Multi-stage build** - Builds both frontend and backend efficiently
+- **Volume persistence** - Database and uploaded files persist across container restarts
+- **Health checks** - Automatic monitoring of service health
+- **Configuration mounting** - Easy updates to `server/config/` without rebuilding
+- **Production-ready** - Optimized for production use with proper environment variables
+
+**Custom Docker Build:**
+
+If you need to build the Docker image directly (without Compose):
+
+```bash
+# Build the image
+docker build -f server/Dockerfile -t chatlayer:latest .
+
+# Run the container
+docker run -d \
+  --name chatlayer \
+  -p 31000:31000 \
+  -e FILE_SIGNING_SECRET=your-secret-key \
+  -v $(pwd)/server/config:/app/config:ro \
+  -v chatlayer_db:/app/db \
+  -v chatlayer_uploads:/app/public/uploads \
+  chatlayer:latest
 ```
 
 ---
@@ -389,20 +485,42 @@ CMD ["node", "server/dist/server.js"]
 ```bash
 cd server
 pnpm install
+pnpm run generate     # Generate Prisma client (required after schema changes)
+pnpm run db:push      # Initialize/update database schema
 pnpm run dev          # Start development server
 pnpm run build        # Build TypeScript
 pnpm test:dev         # Run tests
 pnpm run db:studio    # Open Prisma Studio
 ```
 
+**Important:** After cloning the repository or pulling changes, always run `pnpm run generate` and `pnpm run db:push` to ensure the Prisma client is generated and the database schema is up to date.
+
 ### Web UI
 
 ```bash
 cd web_ui
 pnpm install
-pnpm run dev          # Start development server
-pnpm run build        # Build for production
+pnpm run dev          # Start development server (with hot reload)
+pnpm run build        # Build for production (copies to server/public/)
 ```
+
+**Important:** The `pnpm run build` command automatically copies the built frontend files to `server/public/`. You must build the frontend before starting the production server, or the web UI will not be available.
+
+### Full Stack Development
+
+For development with both frontend and backend hot reload:
+
+```bash
+# Terminal 1: Start server
+cd server
+pnpm run dev
+
+# Terminal 2: Start frontend dev server
+cd web_ui
+pnpm run dev
+```
+
+Note: When running the frontend dev server separately, it runs on a different port (usually 5173) and proxies API requests to the backend. For production deployment, always build the frontend with `pnpm run build` so it's served by the backend server.
 
 ### SDKs
 
