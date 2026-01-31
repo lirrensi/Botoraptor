@@ -48,8 +48,8 @@ Most bot frameworks provide no built-in interface for monitoring customer conver
 ### 1. Clone and Set Up
 
 ```bash
-git clone <your-repo-url>
-cd ChatLayer_lib
+git clone https://github.com/lirrensi/ChatLayer.git
+cd ChatLayer
 ```
 
 ### 2. Configure the Server
