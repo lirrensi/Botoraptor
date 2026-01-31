@@ -1,0 +1,10 @@
+[project]
+name = "chatlayersdk-python"
+version = "1.4.0"
+description = "ChatLayer - human-in-the-loop conversation middleware - python sdk"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.12.5",
+]

@@ -1,0 +1,5 @@
+{
+  "name": "chat_layer_web_ui",
+  "integrations": {},
+  "type": "vue-vite"
+}

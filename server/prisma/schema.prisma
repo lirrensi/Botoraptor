@@ -1,0 +1,48 @@
+datasource db {
+  provider = "sqlite"
+  // URL configured in prisma.config.ts
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+enum MessageType {
+  user_message
+  user_message_service
+  bot_message_service
+  manager_message
+  service_call
+  error_message
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  botId     String
+  userId    String
+  username  String
+  name      String?
+  createdAt DateTime @default(now())
+  blocked   Boolean  @default(false)
+
+  messages  Message[] @relation("UserMessages")
+
+  @@unique([botId, userId])
+}
+
+model Message {
+  id          Int         @id @default(autoincrement())
+  botId       String
+  roomId      String
+  userId      String
+  messageType MessageType
+  text        String
+  attachments Json?
+  meta        Json?
+  createdAt   DateTime    @default(now())
+
+  user        User?       @relation("UserMessages", fields: [userId, botId], references: [userId, botId])
+
+  @@index([botId, roomId])
+}

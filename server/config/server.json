@@ -1,0 +1,7 @@
+{
+    "port": 31000,
+    "apiKeys": ["replace-me-pls-i-beg-you-think-of-security-pls-someone-tell-them-to-change-me"],
+    "maxFileSize": 10485760,
+    "fileTTLSeconds": 604800,
+    "webhooks": []
+}
