@@ -3,7 +3,7 @@ module.exports = {
         {
             name: "chatLayer", // Friendly name for the process
             script: "npm", // Run npm directly
-            args: "run start", // Execute the "start" script from package.json (exactly as 'npm run start' works)
+            args: "run start:prod", // Execute the "start" script from package.json (exactly as 'npm run start' works)
             exec_interpreter: "none", // N/A for npm
             exec_mode: "fork", // Suitable for Node.js apps
             instances: 1, // Single instance for a bot

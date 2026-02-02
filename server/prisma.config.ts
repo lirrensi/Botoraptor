@@ -1,16 +1,21 @@
-import 'dotenv/config'
-import { defineConfig, env } from 'prisma/config'
+import "dotenv/config";
+import { defineConfig, env } from "prisma/config";
+
+// Select database URL based on NODE_ENV
+const isProduction = process.env.NODE_ENV === "production";
+const dbUrl = isProduction
+    ? env("DATABASE_URL_PROD")
+    : env("DATABASE_URL_DEV");
+
+console.log(`[Prisma] Using ${isProduction ? "PRODUCTION" : "DEVELOPMENT"} database: ${dbUrl}`);
 
 export default defineConfig({
-    schema: 'prisma/schema.prisma',
+    schema: "prisma/schema.prisma",
     migrations: {
-        path: 'prisma/migrations',
-        seed: 'tsx prisma/seed.ts',
+        path: "prisma/migrations",
+        seed: "tsx prisma/seed.ts",
     },
     datasource: {
-        // Prefer DIRECT TCP via DATABASE_URL
-        url: env('DATABASE_URL'),
-        // Optionally support shadow DB if present:
-        // shadowDatabaseUrl: env('SHADOW_DATABASE_URL'),
+        url: dbUrl,
     },
-})
+});

@@ -1,11 +1,17 @@
-import 'dotenv/config'
-import { PrismaClient } from './generated/client.ts'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import "dotenv/config";
+import { PrismaClient } from "./generated/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
-// The database URL is expected to be in the format: file:./db/dev.db
-const dbUrl = process.env.DATABASE_URL!
-const adapter = new PrismaBetterSqlite3({ url: dbUrl })
-const prisma = new PrismaClient({ adapter })
+// Select database URL based on NODE_ENV
+const isProduction = process.env.NODE_ENV === "production";
+const dbUrl = isProduction
+    ? process.env.DATABASE_URL_PROD!
+    : process.env.DATABASE_URL_DEV!;
+
+console.log(`[Prisma Client] Using ${isProduction ? "PRODUCTION" : "DEVELOPMENT"} database: ${dbUrl}`);
+
+const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+const prisma = new PrismaClient({ adapter });
 
 export async function connectPrisma() {
     try {

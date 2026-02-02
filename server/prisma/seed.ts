@@ -1,10 +1,17 @@
-import 'dotenv/config'
-import { PrismaClient } from '../src/generated/prisma/client.js'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import "dotenv/config";
+import { PrismaClient } from "../src/generated/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
-const dbUrl = process.env.DATABASE_URL!
-const adapter = new PrismaBetterSqlite3(dbUrl)
-const prisma = new PrismaClient({ adapter })
+// Select database URL based on NODE_ENV
+const isProduction = process.env.NODE_ENV === "production";
+const dbUrl = isProduction
+    ? process.env.DATABASE_URL_PROD!
+    : process.env.DATABASE_URL_DEV!;
+
+console.log(`[Seed] Using ${isProduction ? "PRODUCTION" : "DEVELOPMENT"} database: ${dbUrl}`);
+
+const adapter = new PrismaBetterSqlite3(dbUrl);
+const prisma = new PrismaClient({ adapter });
 
 async function seed() {
   console.log('Seeding database...')
