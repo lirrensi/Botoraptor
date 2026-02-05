@@ -53,7 +53,10 @@ const roomFilter = ref<{
     
     // Local settings object
     const localSettings = ref({
-        notificationLevel: "ManagerCalls" // Default: only service_call notifications
+        notificationLevel: "ManagerCalls", // Default: only service_call notifications
+        theme: "system" as "light" | "dark" | "system", // Theme preference
+        botMessageOpacity: 100, // Bot message transparency (50-100%)
+        fontSize: 16, // Global font size (14-24px)
     });
     
     // Unread messages tracking - roomKey is "botId_roomId"
@@ -452,6 +455,9 @@ const roomFilter = ref<{
             // Try to restore state from cache first
             const restored = await restoreStateFromCache();
             
+            // Apply theme settings after restoring from cache
+            applyThemeSettings();
+            
             // Start listener
             startListener();
             
@@ -503,6 +509,62 @@ const roomFilter = ref<{
         return messages.value.filter(m => m.botId === selectedBotId.value);
     });
 
+    // Computed effective theme (resolves "system" to actual light/dark)
+    const effectiveTheme = computed(() => {
+        const theme = localSettings.value.theme;
+        if (theme === "system") {
+            // Check system preference
+            if (typeof window !== "undefined" && window.matchMedia) {
+                return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            }
+            return "light";
+        }
+        return theme;
+    });
+
+    // Apply theme and font settings to document
+    function applyThemeSettings() {
+        if (typeof document === "undefined") return;
+        
+        const root = document.documentElement;
+        const theme = effectiveTheme.value;
+        
+        // Apply Ionic dark palette class
+        // The .ion-palette-dark class must be on the html element
+        if (theme === "dark") {
+            root.classList.add("ion-palette-dark");
+        } else {
+            root.classList.remove("ion-palette-dark");
+        }
+        
+        // Set Ionic color scheme
+        root.style.setProperty("--ion-color-scheme", theme);
+        
+        // Apply font size
+        const fontSize = localSettings.value.fontSize;
+        root.style.setProperty("--app-font-size", `${fontSize}px`);
+        root.style.fontSize = `${fontSize}px`;
+        
+        // Apply bot message opacity (convert percentage to decimal)
+        const opacity = localSettings.value.botMessageOpacity / 100;
+        root.style.setProperty("--bot-message-opacity", String(opacity));
+    }
+
+    // Watch for theme changes and apply them
+    watch(() => localSettings.value.theme, applyThemeSettings, { immediate: false });
+    watch(() => localSettings.value.fontSize, applyThemeSettings, { immediate: false });
+    watch(() => localSettings.value.botMessageOpacity, applyThemeSettings, { immediate: false });
+
+    // Listen for system theme changes when in "system" mode
+    if (typeof window !== "undefined" && window.matchMedia) {
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        mediaQuery.addEventListener("change", () => {
+            if (localSettings.value.theme === "system") {
+                applyThemeSettings();
+            }
+        });
+    }
+
     // Expose quickAnswers getter
     const getQuickAnswers = computed(() => quickAnswers.value);
 
@@ -524,6 +586,7 @@ const roomFilter = ref<{
         isSearchActive,
         searchTokens,
         getQuickAnswers,
+        effectiveTheme,
 
         // actions
         init,
@@ -537,6 +600,7 @@ const roomFilter = ref<{
         startListener,
         stopListener,
         loadClientConfig,
+        applyThemeSettings,
         
         // cache functions (exposed for manual control if needed)
         saveStateToCache,

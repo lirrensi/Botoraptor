@@ -1000,8 +1000,8 @@ function handleQuickResponsesWheel(e: WheelEvent) {
 }
 
 .quick-response-card {
-    background-color: var(--ion-color-step-200, rgba(255, 255, 255, 0.08)); /* neutral gray chip */
-    color: var(--ion-text-color, #fff);
+    background-color: var(--ion-color-light);
+    color: var(--ion-text-color);
     padding: 8px 12px;
     border-radius: 16px;
     cursor: pointer;
@@ -1012,13 +1012,23 @@ function handleQuickResponsesWheel(e: WheelEvent) {
     flex: 0 0 auto;
     /* Allow card to grow to fit content naturally */
     box-sizing: border-box;
-    border: 1px solid var(--ion-color-step-300, rgba(255, 255, 255, 0.12));
+    border: 1px solid var(--ion-color-light-shade);
 }
 
 .quick-response-card:hover {
-    background-color: var(--ion-color-step-300, rgba(255, 255, 255, 0.16));
+    background-color: var(--ion-color-light-shade);
     transform: none;
     box-shadow: none;
+}
+
+/* Dark mode overrides for quick responses */
+.ion-palette-dark .quick-response-card {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.ion-palette-dark .quick-response-card:hover {
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Ensure the composer area is properly spaced */
@@ -1147,20 +1157,15 @@ function handleQuickResponsesWheel(e: WheelEvent) {
     min-width: 0;
     overflow: auto;
     padding: 12px;
-    /* chat background image (public/images/bg.png) with a safe color fallback */
+    /* Clean background - no image */
     background-color: var(--ion-background-color);
-    background-image: url("/images/bg.png");
-    background-blend-mode: soft-light;
-    background-repeat: repeat;
-    background-position: center;
-    background-size: auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
     box-sizing: border-box;
 }
 
-/* message bubbles - switched to bordered style (no full fill) */
+/* message bubbles - theme-aware colors */
 .message {
     /* Telegram-like lightly filled bubble */
     padding: 10px 12px;
@@ -1170,27 +1175,45 @@ function handleQuickResponsesWheel(e: WheelEvent) {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--ion-color-light);
+    border: 1px solid var(--ion-color-light-shade);
+    color: var(--ion-text-color);
 
     min-width: 0;
 }
 
-/* left / right positioning */
+/* Bot messages with configurable transparency */
+.message[data-type="bot_message"],
+.message[data-type="bot_message_service"] {
+    opacity: var(--bot-message-opacity, 1);
+}
+
+/* left / right positioning - theme-aware colors */
 .message.left {
     align-self: flex-start;
-    /* lighter filled left bubble (incoming) */
-    background: rgba(32, 0, 173, 0.82);
-    border: 1px solid rgba(0, 0, 0, 0.6);
-    color: inherit;
+    /* incoming messages: subtle background */
+    background: var(--ion-color-light);
+    border: 1px solid var(--ion-color-light-shade);
+    color: var(--ion-text-color);
 }
 
 .message.right {
     align-self: flex-end;
-    /* outgoing: soft tinted fill to distinguish from incoming */
-    background: rgba(57, 14, 152, 0.56);
-    border: 1px solid rgba(38, 132, 255, 0.28);
-    color: inherit;
+    /* outgoing messages: primary tint */
+    background: var(--ion-color-primary-tint);
+    border: 1px solid var(--ion-color-primary-shade);
+    color: var(--ion-color-primary-contrast);
+}
+
+/* Dark mode overrides for message bubbles */
+.ion-palette-dark .message.left {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.ion-palette-dark .message.right {
+    background: var(--ion-color-primary);
+    border: 1px solid var(--ion-color-primary-shade);
 }
 
 /* special styling for bot-side 'service_call' messages:
@@ -1198,7 +1221,7 @@ function handleQuickResponsesWheel(e: WheelEvent) {
 .message.left[data-type="service_call"] {
     max-width: 95%;
     /* ensure a noticeably longer appearance on wide screens */
-    border: 2px solid red;
+    border: 2px solid var(--ion-color-danger);
     border-radius: 12px;
     padding: 12px 14px;
 
@@ -1208,17 +1231,35 @@ function handleQuickResponsesWheel(e: WheelEvent) {
 /* special styling for 'error_message' messages:
    - reddish dimmed background to indicate error */
 .message[data-type="error_message"] {
-    background: rgba(231, 76, 60, 0.15);
-    border: 1px solid rgba(231, 76, 60, 0.3);
+    background: rgba(var(--ion-color-danger-rgb), 0.15);
+    border: 1px solid rgba(var(--ion-color-danger-rgb), 0.3);
     color: inherit;
 }
 
-/* small annotation on top */
-.annotation {
+/* small annotation on top (message type label) */
+.message .annotation {
     font-size: 11px;
-    color: var(--ion-color-medium);
+    color: #374151;
     text-transform: uppercase;
     letter-spacing: 0.4px;
+    font-weight: 700;
+}
+
+.ion-palette-dark .message .annotation {
+    color: #d1d5db;
+}
+
+.message.left .annotation {
+    color: #1f2937;
+}
+
+.ion-palette-dark .message.left .annotation {
+    color: #f3f4f6;
+}
+
+.message.right .annotation {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* meta (username) */
@@ -1228,11 +1269,25 @@ function handleQuickResponsesWheel(e: WheelEvent) {
     align-items: center;
     margin-bottom: 2px;
     font-size: 13px;
-    color: var(--ion-color-medium);
+    color: #374151;
+    font-weight: 700;
+}
+
+.ion-palette-dark .message .meta {
+    color: #d1d5db;
+}
+
+.message.left .meta {
+    color: #1f2937;
+}
+
+.ion-palette-dark .message.left .meta {
+    color: #f3f4f6;
 }
 
 .message.right .meta {
-    color: rgba(255, 255, 255, 0.9);
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .auto-message {
@@ -1246,19 +1301,41 @@ function handleQuickResponsesWheel(e: WheelEvent) {
 }
 
 /* time indicator placed after text, dimmed and small */
-.time-indicator {
+.message .time-indicator {
     font-size: 12px;
-    color: var(--ion-color-medium);
-    opacity: 0.75;
+    color: #4b5563;
+    font-weight: 700;
     align-self: flex-end;
     /* margin-top: 4px; */
 }
 
+.ion-palette-dark .message .time-indicator {
+    color: #d1d5db;
+}
+
+.message.left .time-indicator {
+    color: #1f2937;
+}
+
+.ion-palette-dark .message.left .time-indicator {
+    color: #f3f4f6;
+}
+
+.message.right .time-indicator {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 /* system messages */
 .message[data-type="system"] {
-    background: rgba(0, 0, 0, 0.06);
+    background: var(--ion-color-light-shade);
     font-style: italic;
     align-self: center;
+    color: var(--ion-color-medium);
+}
+
+.ion-palette-dark .message[data-type="system"] {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 /* composer */
@@ -1412,8 +1489,8 @@ function handleQuickResponsesWheel(e: WheelEvent) {
 
 /* highlight styling for search matches */
 :deep(.hl) {
-    background: #ffe58f;
-    color: inherit;
+    background: var(--ion-color-warning-tint);
+    color: var(--ion-color-warning-contrast);
     border-radius: 3px;
     padding: 0 2px;
 }

@@ -13,9 +13,11 @@ import { ref, onMounted, onUnmounted } from "vue";
 import { IonApp, IonRouterOutlet } from "@ionic/vue";
 import AuthModal from "./components/AuthModal.vue";
 import { getApiKey } from "./services/api";
- 
+import { useUiStore } from "./stores/uiStore";
+
 const showAuth = ref(!getApiKey());
- 
+const ui = useUiStore();
+
 function onAuthenticated() {
     showAuth.value = false;
     // notify other parts of the app (e.g. HomePage) that authentication happened
@@ -29,6 +31,9 @@ function onAuthenticated() {
         // Just clear the storage here
         sessionStorage.removeItem('intendedRoute');
     }
+    
+    // Apply theme settings after authentication
+    ui.applyThemeSettings();
 }
  
 function onAuthRequired() {

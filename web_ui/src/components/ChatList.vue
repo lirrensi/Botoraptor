@@ -363,6 +363,7 @@ const filteredChats = computed(() => {
 /* Active chat: colored background (Telegram-like), no left accent */
 ion-item.active {
     --background: var(--ion-color-primary-tint);
+    --color: var(--ion-color-primary-contrast);
     border-left: none;
     padding-left: 8px;
     box-sizing: border-box;
@@ -370,6 +371,10 @@ ion-item.active {
 }
 ion-item.active ion-label h3 {
     font-weight: 600;
+}
+ion-item.active ion-label .preview {
+    color: var(--ion-color-primary-contrast);
+    opacity: 0.8;
 }
 
 /* Avatar circle with first letter */
@@ -460,14 +465,32 @@ ion-label .preview {
 
 /* Name and username styling */
 .name {
-    font-weight: 600;
-    color: var(--ion-text-color);
+    font-weight: 700;
+    color: #111827;
+}
+
+.ion-palette-dark .name {
+    color: #f9fafb;
 }
 
 .username {
-    font-weight: 400;
-    color: var(--ion-color-medium);
+    font-weight: 700;
+    color: #374151;
     font-size: 0.9em;
+}
+
+.ion-palette-dark .username {
+    color: #d1d5db;
+}
+
+/* Time styling in chat list */
+ion-note {
+    color: #374151;
+    font-weight: 700;
+}
+
+.ion-palette-dark ion-note {
+    color: #d1d5db;
 }
 
 .separator {
