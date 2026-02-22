@@ -1,3 +1,11 @@
 {
-    "quickAnswersPreset": ["Hello! Thanks for reaching out!"]
+    "quickAnswersPreset": [
+        "Hello! Thanks for reaching out!",
+        "I'll help you with that right away.",
+        "Could you provide more details?"
+    ],
+    "dangerousExtensions": [
+        ".exe", ".bat", ".cmd", ".ps1", ".sh", ".js", ".vbs",
+        ".jar", ".msi", ".scr", ".pif", ".com", ".lnk"
+    ]
 }

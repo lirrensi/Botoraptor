@@ -24,26 +24,22 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union
-from urllib.parse import urlencode
+from collections.abc import Callable
+from typing import Any
 
 import httpx
 
 from .models import (
     Attachment,
-    AttachmentType,
     ChatLayerConfig,
     FileUploadByUrlOptions,
     FileUploadOptions,
-    GetMessagesParams,
-    GetRoomsParams,
     ListenerType,
     Message,
     MessageType,
     RoomInfo,
-    RoomsResponse,
-    ServerResponse,
     User,
 )
 
@@ -62,8 +58,8 @@ class ChatLayerAPIError(ChatLayerError):
     def __init__(
         self,
         message: str,
-        status_code: Optional[int] = None,
-        response_text: Optional[str] = None,
+        status_code: int | None = None,
+        response_text: str | None = None,
     ):
         super().__init__(message)
         self.status_code = status_code
@@ -101,12 +97,12 @@ class ChatLayer:
         self,
         api_key: str,
         base_url: str = "/",
-        bot_id: Optional[str] = None,
-        bot_ids: Optional[List[str]] = None,
-        listener_type: Optional[Union[ListenerType, str]] = None,
+        bot_id: str | None = None,
+        bot_ids: list[str] | None = None,
+        listener_type: ListenerType | str | None = None,
         timeout_ms: int = 60000,
         poll_delay_ms: int = 1000,
-        on_error: Optional[Callable[[Exception], None]] = None,
+        on_error: Callable[[Exception], None] | None = None,
     ):
         """
         Initialize the ChatLayer client.
@@ -141,17 +137,17 @@ class ChatLayer:
         self._on_error = on_error
 
         # Polling state
-        self._listeners: List[Callable[[Message], None]] = []
+        self._listeners: list[Callable[[Message], None]] = []
         self._running = False
         self._abort = False
-        self._poll_task: Optional[asyncio.Task] = None
+        self._poll_task: asyncio.Task | None = None
 
         # HTTP client
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
         self._client_owned = True
 
     @classmethod
-    def from_config(cls, config: ChatLayerConfig) -> "ChatLayer":
+    def from_config(cls, config: ChatLayerConfig) -> ChatLayer:
         """Create a ChatLayer client from a ChatLayerConfig model."""
         return cls(
             api_key=config.api_key,
@@ -169,9 +165,7 @@ class ChatLayer:
         if self._client is None:
             self._client = httpx.AsyncClient(
                 headers={"Authorization": f"Bearer {self._api_key}"},
-                timeout=httpx.Timeout(
-                    self._timeout_ms / 1000 + 10
-                ),  # Add buffer for long polling
+                timeout=httpx.Timeout(self._timeout_ms / 1000 + 10),  # Add buffer for long polling
             )
         return self._client
 
@@ -183,16 +177,14 @@ class ChatLayer:
                 await asyncio.wait_for(self._poll_task, timeout=5.0)
             except asyncio.TimeoutError:
                 self._poll_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._poll_task
-                except asyncio.CancelledError:
-                    pass
 
         if self._client and self._client_owned:
             await self._client.aclose()
             self._client = None
 
-    async def __aenter__(self) -> "ChatLayer":
+    async def __aenter__(self) -> ChatLayer:
         """Async context manager entry."""
         return self
 
@@ -204,12 +196,10 @@ class ChatLayer:
         """Handle an error by calling the on_error callback and logging."""
         logger.error(f"[ChatLayer SDK] error: {err}")
         if self._on_error:
-            try:
+            with contextlib.suppress(Exception):
                 self._on_error(err)
-            except Exception:
-                pass
 
-    def _ensure_absolute_url(self, url: Optional[str]) -> Optional[str]:
+    def _ensure_absolute_url(self, url: str | None) -> str | None:
         """Convert relative URLs to absolute URLs using base_url."""
         if not url:
             return url
@@ -217,7 +207,7 @@ class ChatLayer:
             return url
         return f"{self._base_url}{url if url.startswith('/') else f'/{url}'}"
 
-    def _normalize_attachments(self, message: Optional[Message]) -> None:
+    def _normalize_attachments(self, message: Message | None) -> None:
         """Normalize attachment URLs in a message."""
         if not message or not message.attachments:
             return
@@ -225,33 +215,31 @@ class ChatLayer:
             if attachment and attachment.url:
                 attachment.url = self._ensure_absolute_url(attachment.url)
 
-    def _normalize_attachments_list(self, messages: List[Message]) -> None:
+    def _normalize_attachments_list(self, messages: list[Message]) -> None:
         """Normalize attachment URLs in a list of messages."""
         for message in messages:
             self._normalize_attachments(message)
 
-    def _extract_response(self, payload: Dict[str, Any]) -> Any:
+    def _extract_response(self, payload: dict[str, Any]) -> Any:
         """Extract data from server response, handling both legacy and new formats."""
         if payload is None:
             return None
         if "data" in payload:
             return payload["data"]
         # Remove metadata fields and return the rest
-        return {
-            k: v for k, v in payload.items() if k not in ("success", "errorMessage")
-        }
+        return {k: v for k, v in payload.items() if k not in ("success", "errorMessage")}
 
     async def _request(
         self,
         method: str,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
-        content: Optional[bytes] = None,
-        data: Optional[Dict[str, Any]] = None,
-        files: Optional[List[tuple]] = None,
-        headers: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        params: dict[str, Any] | None = None,
+        json_data: dict[str, Any] | None = None,
+        content: bytes | None = None,
+        data: dict[str, Any] | None = None,
+        files: list[tuple] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """Make an HTTP request to the API."""
         client = self._get_client()
         url = f"{self._base_url}{path}"
@@ -268,9 +256,7 @@ class ChatLayer:
                     data=data,
                     files=files,
                     headers={
-                        k: v
-                        for k, v in request_headers.items()
-                        if k.lower() != "content-type"
+                        k: v for k, v in request_headers.items() if k.lower() != "content-type"
                     },
                 )
             elif content:
@@ -311,11 +297,11 @@ class ChatLayer:
                 response_text=text.decode() if isinstance(text, bytes) else str(text),
             )
             self._handle_error(err)
-            raise err
+            raise err from None
         except httpx.RequestError as e:
             err = ChatLayerAPIError(f"{method} {path} request error: {e}")
             self._handle_error(err)
-            raise err
+            raise err from None
 
     # ==================== Message Methods ====================
 
@@ -339,9 +325,7 @@ class ChatLayer:
         )
 
         if not payload.get("success"):
-            err = ChatLayerAPIError(
-                f"add_message error: {payload.get('errorMessage', payload)}"
-            )
+            err = ChatLayerAPIError(f"add_message error: {payload.get('errorMessage', payload)}")
             self._handle_error(err)
             raise err
 
@@ -429,8 +413,8 @@ class ChatLayer:
     async def add_message_single(
         self,
         message: Message,
-        file_or_files: Union[bytes, List[bytes]],
-        options: Optional[Union[FileUploadOptions, List[FileUploadOptions]]] = None,
+        file_or_files: bytes | list[bytes],
+        options: FileUploadOptions | list[FileUploadOptions] | None = None,
     ) -> Message:
         """
         Create a message and upload file(s) in a single multipart/form-data request.
@@ -459,9 +443,7 @@ class ChatLayer:
             self._handle_error(err)
             raise err
 
-        files_list = (
-            file_or_files if isinstance(file_or_files, list) else [file_or_files]
-        )
+        files_list = file_or_files if isinstance(file_or_files, list) else [file_or_files]
         opts_list = (
             options
             if isinstance(options, list)
@@ -469,7 +451,7 @@ class ChatLayer:
         )
 
         # Build form data
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "botId": message.bot_id,
             "roomId": message.room_id,
             "userId": message.user_id,
@@ -484,14 +466,12 @@ class ChatLayer:
         if message.text:
             data["text"] = message.text
         if message.meta is not None:
-            data["meta"] = (
-                message.meta if isinstance(message.meta, str) else str(message.meta)
-            )
+            data["meta"] = message.meta if isinstance(message.meta, str) else str(message.meta)
 
         # Build files list for httpx
-        httpx_files: List[tuple] = []
-        types_list: List[str] = []
-        filenames_list: List[str] = []
+        httpx_files: list[tuple] = []
+        types_list: list[str] = []
+        filenames_list: list[str] = []
 
         for i, (file_bytes, opt) in enumerate(zip(files_list, opts_list)):
             filename = opt.filename or f"file_{i}"
@@ -541,7 +521,7 @@ class ChatLayer:
         bot_id: str,
         user_id: str,
         username: str,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> User:
         """
         Add or get a user.
@@ -570,9 +550,7 @@ class ChatLayer:
         )
 
         if not payload.get("success"):
-            err = ChatLayerAPIError(
-                f"add_user error: {payload.get('errorMessage', payload)}"
-            )
+            err = ChatLayerAPIError(f"add_user error: {payload.get('errorMessage', payload)}")
             self._handle_error(err)
             raise err
 
@@ -589,12 +567,12 @@ class ChatLayer:
 
     async def get_messages(
         self,
-        bot_id: Optional[str] = None,
-        room_id: Optional[str] = None,
-        limit: Optional[int] = None,
-        cursor_id: Optional[Union[int, str]] = None,
-        types: Optional[str] = None,
-    ) -> List[Message]:
+        bot_id: str | None = None,
+        room_id: str | None = None,
+        limit: int | None = None,
+        cursor_id: int | str | None = None,
+        types: str | None = None,
+    ) -> list[Message]:
         """
         Get messages from the server.
 
@@ -617,7 +595,7 @@ class ChatLayer:
                 "bot_id is required for get_messages (provide in params or constructor)"
             )
 
-        params: Dict[str, Any] = {"botId": effective_bot_id}
+        params: dict[str, Any] = {"botId": effective_bot_id}
         if room_id:
             params["roomId"] = room_id
         if limit:
@@ -634,9 +612,7 @@ class ChatLayer:
         )
 
         if not payload.get("success"):
-            err = ChatLayerAPIError(
-                f"get_messages error: {payload.get('errorMessage', payload)}"
-            )
+            err = ChatLayerAPIError(f"get_messages error: {payload.get('errorMessage', payload)}")
             self._handle_error(err)
             raise err
 
@@ -656,7 +632,7 @@ class ChatLayer:
         self._normalize_attachments_list(messages)
         return messages
 
-    async def get_bots(self) -> List[str]:
+    async def get_bots(self) -> list[str]:
         """
         Get list of bot IDs.
 
@@ -666,9 +642,7 @@ class ChatLayer:
         payload = await self._request("GET", "/api/v1/getBots")
 
         if not payload.get("success"):
-            err = ChatLayerAPIError(
-                f"get_bots error: {payload.get('errorMessage', payload)}"
-            )
+            err = ChatLayerAPIError(f"get_bots error: {payload.get('errorMessage', payload)}")
             self._handle_error(err)
             raise err
 
@@ -687,10 +661,10 @@ class ChatLayer:
 
     async def get_rooms(
         self,
-        bot_id: Optional[str] = None,
-        message_type: Optional[Union[MessageType, str]] = None,
-        depth: Optional[int] = None,
-    ) -> List[RoomInfo]:
+        bot_id: str | None = None,
+        message_type: MessageType | str | None = None,
+        depth: int | None = None,
+    ) -> list[RoomInfo]:
         """
         Get rooms for a bot.
 
@@ -711,7 +685,7 @@ class ChatLayer:
                 "bot_id is required for get_rooms (provide in params or constructor)"
             )
 
-        params: Dict[str, Any] = {"botId": effective_bot_id}
+        params: dict[str, Any] = {"botId": effective_bot_id}
         if message_type:
             params["messageType"] = str(message_type)
         if depth is not None and depth > 0:
@@ -724,15 +698,13 @@ class ChatLayer:
         )
 
         if not payload.get("success"):
-            err = ChatLayerAPIError(
-                f"get_rooms error: {payload.get('errorMessage', payload)}"
-            )
+            err = ChatLayerAPIError(f"get_rooms error: {payload.get('errorMessage', payload)}")
             self._handle_error(err)
             raise err
 
         data = self._extract_response(payload)
 
-        result: Optional[Dict[str, Any]] = None
+        result: dict[str, Any] | None = None
         if isinstance(data, dict) and "rooms" in data:
             result = data
         elif isinstance(payload.get("data"), dict) and "rooms" in payload["data"]:
@@ -752,7 +724,7 @@ class ChatLayer:
 
         return rooms
 
-    async def get_client_config(self) -> Dict[str, Any]:
+    async def get_client_config(self) -> dict[str, Any]:
         """
         Get client configuration from the server.
 
@@ -781,9 +753,9 @@ class ChatLayer:
 
     async def upload_file(
         self,
-        file_or_files: Union[bytes, List[bytes]],
-        options: Optional[Union[FileUploadOptions, List[FileUploadOptions]]] = None,
-    ) -> List[Attachment]:
+        file_or_files: bytes | list[bytes],
+        options: FileUploadOptions | list[FileUploadOptions] | None = None,
+    ) -> list[Attachment]:
         """
         Upload file(s) to the server.
 
@@ -802,9 +774,7 @@ class ChatLayer:
             self._handle_error(err)
             raise err
 
-        files_list = (
-            file_or_files if isinstance(file_or_files, list) else [file_or_files]
-        )
+        files_list = file_or_files if isinstance(file_or_files, list) else [file_or_files]
         opts_list = (
             options
             if isinstance(options, list)
@@ -812,10 +782,10 @@ class ChatLayer:
         )
 
         # Build form data
-        data: Dict[str, Any] = {}
-        httpx_files: List[tuple] = []
+        data: dict[str, Any] = {}
+        httpx_files: list[tuple] = []
 
-        for i, (file_bytes, opt) in enumerate(zip(files_list, opts_list)):
+        for _i, (file_bytes, opt) in enumerate(zip(files_list, opts_list)):
             if not opt.filename or not opt.type:
                 err = ChatLayerError(
                     "upload_file: each file requires options.type and options.filename"
@@ -838,23 +808,19 @@ class ChatLayer:
         )
 
         if not payload.get("success"):
-            err = ChatLayerAPIError(
-                f"upload_file error: {payload.get('errorMessage', payload)}"
-            )
+            err = ChatLayerAPIError(f"upload_file error: {payload.get('errorMessage', payload)}")
             self._handle_error(err)
             raise err
 
         data = self._extract_response(payload)
 
-        attachments: List[Attachment] = []
+        attachments: list[Attachment] = []
         if isinstance(data, list):
             attachments = [Attachment.model_validate(a) for a in data]
         elif isinstance(data, dict) and "attachments" in data:
             attachments = [Attachment.model_validate(a) for a in data["attachments"]]
         elif isinstance(payload.get("data"), dict) and "attachments" in payload["data"]:
-            attachments = [
-                Attachment.model_validate(a) for a in payload["data"]["attachments"]
-            ]
+            attachments = [Attachment.model_validate(a) for a in payload["data"]["attachments"]]
 
         # Normalize attachment URLs
         for attachment in attachments:
@@ -865,8 +831,8 @@ class ChatLayer:
 
     async def upload_file_by_url(
         self,
-        files: List[FileUploadByUrlOptions],
-    ) -> List[Attachment]:
+        files: list[FileUploadByUrlOptions],
+    ) -> list[Attachment]:
         """
         Upload files by providing their URLs.
 
@@ -886,9 +852,7 @@ class ChatLayer:
         payload = await self._request(
             "POST",
             "/api/v1/uploadFileByURL",
-            json_data={
-                "files": [f.model_dump(by_alias=True, exclude_none=True) for f in files]
-            },
+            json_data={"files": [f.model_dump(by_alias=True, exclude_none=True) for f in files]},
         )
 
         if not payload.get("success"):
@@ -900,15 +864,13 @@ class ChatLayer:
 
         data = self._extract_response(payload)
 
-        attachments: List[Attachment] = []
+        attachments: list[Attachment] = []
         if isinstance(data, list):
             attachments = [Attachment.model_validate(a) for a in data]
         elif isinstance(data, dict) and "attachments" in data:
             attachments = [Attachment.model_validate(a) for a in data["attachments"]]
         elif isinstance(payload.get("data"), dict) and "attachments" in payload["data"]:
-            attachments = [
-                Attachment.model_validate(a) for a in payload["data"]["attachments"]
-            ]
+            attachments = [Attachment.model_validate(a) for a in payload["data"]["attachments"]]
 
         # Normalize attachment URLs
         for attachment in attachments:
@@ -938,8 +900,8 @@ class ChatLayer:
 
     def start(
         self,
-        bot_ids: Optional[List[str]] = None,
-        listener_type: Optional[Union[ListenerType, str]] = None,
+        bot_ids: list[str] | None = None,
+        listener_type: ListenerType | str | None = None,
     ) -> None:
         """
         Start the real-time message polling loop.
@@ -955,13 +917,9 @@ class ChatLayer:
             return
 
         run_bot_ids = bot_ids if bot_ids is not None else self._bot_ids
-        run_listener_type = (
-            ListenerType(listener_type) if listener_type else self._listener_type
-        )
+        run_listener_type = ListenerType(listener_type) if listener_type else self._listener_type
 
-        if run_listener_type == ListenerType.BOT and (
-            not run_bot_ids or len(run_bot_ids) == 0
-        ):
+        if run_listener_type == ListenerType.BOT and (not run_bot_ids or len(run_bot_ids) == 0):
             raise ChatLayerError(
                 "bot_ids are required to start polling for listener_type=bot. "
                 "Provide them in constructor or start()"
@@ -992,11 +950,8 @@ class ChatLayer:
                 if updates:
                     for message in updates:
                         for callback in self._listeners:
-                            try:
+                            with contextlib.suppress(Exception):
                                 callback(message)
-                            except Exception:
-                                # Swallow listener errors
-                                pass
 
                 # Small pause before polling again
                 await asyncio.sleep(0.05)
@@ -1007,9 +962,9 @@ class ChatLayer:
                 await asyncio.sleep(backoff / 1000)
                 backoff = min(30000, int(backoff * 1.5))
 
-    async def _fetch_updates(self) -> List[Message]:
+    async def _fetch_updates(self) -> list[Message]:
         """Fetch updates from the server."""
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "timeoutMs": self._timeout_ms,
             "listenerType": self._listener_type.value,
         }
@@ -1024,13 +979,11 @@ class ChatLayer:
         )
 
         if not payload.get("success"):
-            raise ChatLayerAPIError(
-                f"get_updates error: {payload.get('errorMessage', payload)}"
-            )
+            raise ChatLayerAPIError(f"get_updates error: {payload.get('errorMessage', payload)}")
 
         data = self._extract_response(payload)
 
-        messages: List[Message] = []
+        messages: list[Message] = []
         if isinstance(data, list):
             messages = [Message.model_validate(m) for m in data]
         elif isinstance(data, dict) and "messages" in data:

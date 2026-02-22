@@ -85,6 +85,16 @@
                             class="attachment"
                             :class="{ 'has-preview': a.type === 'image' || a.type === 'video' }"
                         >
+                            <!-- Warning for dangerous file extensions -->
+                            <ion-chip
+                                v-if="isDangerousFile(a.filename || a.file_name)"
+                                color="warning"
+                                class="dangerous-file-warning"
+                            >
+                                <ion-icon :icon="warningOutline"></ion-icon>
+                                <ion-label>Potentially dangerous file</ion-label>
+                            </ion-chip>
+
                             <template v-if="a.type === 'image'">
                                 <img
                                     :src="getAttachmentUrl(a)"
@@ -262,8 +272,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUpdated, onMounted, onBeforeUnmount, nextTick } from "vue";
-import { IonButton, IonItem, IonInput, IonCheckbox, IonLabel, IonIcon } from "@ionic/vue";
-import { chevronUpOutline, chevronDownOutline, documentOutline } from "ionicons/icons";
+import { IonButton, IonItem, IonInput, IonCheckbox, IonLabel, IonIcon, IonChip } from "@ionic/vue";
+import { chevronUpOutline, chevronDownOutline, documentOutline, warningOutline } from "ionicons/icons";
 import { DateTime } from "luxon";
 import { useI18n } from "vue-i18n";
 import { getApiKey } from "../services/api";
@@ -279,6 +289,16 @@ const quickAnswers = computed(() => uiStore.getQuickAnswers || []);
 
 // Quick responses toggle state
 const showQuickResponses = ref(true);
+
+// Dangerous extensions from client config (loaded via API)
+const dangerousExtensions = ref<string[]>([]);
+
+// Check if filename has dangerous extension
+function isDangerousFile(filename: string | undefined): boolean {
+    if (!filename || dangerousExtensions.value.length === 0) return false;
+    const ext = filename.toLowerCase().substring(filename.lastIndexOf("."));
+    return dangerousExtensions.value.includes(ext);
+}
 
 type Attachment = {
     type: "image" | "video" | "document" | "file";
@@ -873,6 +893,20 @@ onMounted(() => {
     nextTick(() => {
         autoResize();
     });
+    // Load client config for dangerous extensions
+    (async () => {
+        try {
+            const res = await fetch("/api/v1/getClientConfig");
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.dangerousExtensions) {
+                    dangerousExtensions.value = data.dangerousExtensions;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load client config:", e);
+        }
+    })();
 });
 
 onBeforeUnmount(() => {
@@ -1480,6 +1514,19 @@ function handleQuickResponsesWheel(e: WheelEvent) {
 .attachment-error {
     color: #e74c3c;
     font-size: 13px;
+}
+
+/* dangerous file warning chip */
+.dangerous-file-warning {
+    margin-bottom: 4px;
+    font-size: 12px;
+    --background: rgba(255, 193, 7, 0.2);
+    --color: #856404;
+}
+
+.ion-palette-dark .dangerous-file-warning {
+    --background: rgba(255, 193, 7, 0.15);
+    --color: #ffc107;
 }
 
 /* minor tweak for message text after files */

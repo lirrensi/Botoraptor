@@ -169,6 +169,8 @@ export type GetRoomsOptions = {
     botId: string;
     messageType?: string; // Filter by message type (e.g., "error_message")
     depth?: number; // Default 5 - check if type appears in last N messages
+    limit?: number; // Max rooms to return (default 50, max 500)
+    cursorId?: string; // Pagination cursor (message id)
 };
 
 /**
@@ -179,85 +181,123 @@ export type GetRoomsOptions = {
  * - Optional filtering by messageType with depth check: only returns rooms where
  *   the specified message type appears in the last `depth` messages of that room.
  *   This is useful for finding cases like error+automated message sequences.
+ * - Pagination: uses cursorId for efficient scrolling through large datasets.
+ * - Batch user fetch: fetches all users in a single query (fixes N+1 problem).
  */
 export async function getRooms(opts: GetRoomsOptions): Promise<{ rooms: RoomInfo[] }> {
-    const { botId, messageType, depth = 5 } = opts;
+    const { botId, messageType, depth = 10, limit = 50, cursorId } = opts;
+    const effectiveLimit = Math.min(limit, 500); // Cap at 500
 
     if (!botId) {
         throw new Error("botId is required");
     }
 
-    // Fetch recent messages for the bot (ordered newest-first so we can easily pick lastMessage)
-    const messages = await prisma.message.findMany({
-        where: { botId },
+    // Build query with pagination
+    const whereClause: any = { botId };
+    
+    // If cursor provided, filter to messages before that cursor
+    if (cursorId) {
+        const cursorMessage = await prisma.message.findUnique({
+            where: { id: parseInt(cursorId, 10) },
+            select: { createdAt: true }
+        });
+        if (cursorMessage) {
+            whereClause.createdAt = { lt: cursorMessage.createdAt };
+        }
+    }
+
+    // Get distinct roomIds with their latest message - with limit
+    const latestMessages = await prisma.message.findMany({
+        where: whereClause,
         orderBy: { createdAt: "desc" },
         select: {
-            roomId: true,
-            userId: true,
             id: true,
-            botId: true,
-            messageType: true,
+            roomId: true,
             text: true,
+            createdAt: true,
+            messageType: true,
+            userId: true,
             attachments: true,
             meta: true,
-            createdAt: true,
         },
+        take: effectiveLimit * depth, // Get enough messages to find limit rooms
     });
 
-    // Group messages by roomId for filtering
-    const messagesByRoom = new Map<string, typeof messages>();
-    for (const m of messages) {
-        if (!messagesByRoom.has(m.roomId)) {
-            messagesByRoom.set(m.roomId, []);
+    // Group by roomId and get last message per room
+    const roomMap = new Map<string, {
+        roomId: string;
+        lastMessage: any;
+        userIds: Set<string>;
+    }>();
+
+    for (const msg of latestMessages) {
+        if (roomMap.size >= effectiveLimit) break;
+        
+        if (!roomMap.has(msg.roomId)) {
+            roomMap.set(msg.roomId, {
+                roomId: msg.roomId,
+                lastMessage: msg,
+                userIds: new Set([msg.userId]),
+            });
+        } else {
+            roomMap.get(msg.roomId)!.userIds.add(msg.userId);
         }
-        messagesByRoom.get(m.roomId)!.push(m);
     }
 
-    // Determine unique roomIds in order of most-recent message first
-    const seenRooms = new Set<string>();
-    const roomIds: string[] = [];
-    for (const m of messages) {
-        if (!seenRooms.has(m.roomId)) {
-            seenRooms.add(m.roomId);
-            roomIds.push(m.roomId);
-        }
+    const roomIds = Array.from(roomMap.keys());
+
+    if (roomIds.length === 0) {
+        return { rooms: [] };
     }
 
-    const rooms: RoomInfo[] = [];
+    // Batch fetch all users in a single query (fixes N+1)
+    const allUserIds = new Set<string>();
+    for (const room of roomMap.values()) {
+        room.userIds.forEach(uid => allUserIds.add(uid));
+    }
 
-    // For each room, compute distinct users and the last message
-    for (const roomId of roomIds) {
-        const roomMessages = messagesByRoom.get(roomId) || [];
-
-        // If messageType filter is applied, check if it appears in last `depth` messages
-        if (messageType) {
-            const lastNMessages = roomMessages.slice(0, depth);
-            const hasMatchingType = lastNMessages.some(m => m.messageType === messageType);
-            if (!hasMatchingType) {
-                continue; // Skip this room - filter not matched
-            }
-        }
-
-        // collect distinct userIds for this room
-        const userIds = Array.from(new Set(roomMessages.map(m => m.userId)));
-
-        // fetch user records (may be empty if user not created)
-        const users = await prisma.user.findMany({
-            where: {
-                botId,
-                userId: { in: userIds },
-            },
-        });
-
-        // lastMessage: since messages are ordered desc, the first match is the latest
-        const lastMessage = roomMessages[0] || null;
-
-        rooms.push({
+    const users = await prisma.user.findMany({
+        where: {
             botId,
-            roomId,
-            users: users as unknown as User[],
-            lastMessage: lastMessage as unknown as Message | null,
-        });
+            userId: { in: Array.from(allUserIds) }
+        },
+        select: { userId: true, username: true, name: true }
+    });
+
+    const userMap = new Map(users.map(u => [u.userId, u]));
+
+    // Filter by messageType if specified
+    let rooms: RoomInfo[] = Array.from(roomMap.values()).map(room => {
+        const roomUsers = Array.from(room.userIds)
+            .map(userId => userMap.get(userId))
+            .filter(Boolean)
+            .map(u => ({
+                id: 0, // Not needed for room display
+                botId,
+                userId: u!.userId,
+                username: u!.username,
+                name: u!.name,
+                createdAt: new Date(), // Not needed for room display
+                blocked: false,
+            })) as User[];
+
+        return {
+            botId,
+            roomId: room.roomId,
+            users: roomUsers,
+            lastMessage: {
+                id: room.lastMessage.id,
+                text: room.lastMessage.text,
+                createdAt: room.lastMessage.createdAt,
+                messageType: room.lastMessage.messageType,
+                attachments: room.lastMessage.attachments,
+                meta: room.lastMessage.meta,
+            } as Message,
+        };
+    });
+
+    if (messageType) {
+        rooms = rooms.filter(r => r.lastMessage && r.lastMessage.messageType === messageType);
     }
 
     return { rooms };

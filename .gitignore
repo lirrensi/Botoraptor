@@ -1,2 +1,31 @@
+# Secrets & local config
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
 
+# Private folder (configs, local data)
 private/
+
+# Agent chat / planning files
+agent_chat/
+
+# Editor/IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Screenshots and temp files
+*Screenshot*.png
+*.tmp
+*.temp

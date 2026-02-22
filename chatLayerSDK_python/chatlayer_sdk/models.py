@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -49,15 +49,15 @@ class Attachment(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    id: Optional[str] = None
+    id: str | None = None
     type: AttachmentType
-    is_external: Optional[bool] = Field(default=None, alias="isExternal")
-    url: Optional[str] = None
-    filename: Optional[str] = None
-    original_name: Optional[str] = Field(default=None, alias="original_name")
-    mime_type: Optional[str] = Field(default=None, alias="mime_type")
-    size: Optional[int] = None
-    created_at: Optional[datetime] = Field(default=None, alias="createdAt")
+    is_external: bool | None = Field(default=None, alias="isExternal")
+    url: str | None = None
+    filename: str | None = None
+    original_name: str | None = Field(default=None, alias="original_name")
+    mime_type: str | None = Field(default=None, alias="mime_type")
+    size: int | None = None
+    created_at: datetime | None = Field(default=None, alias="createdAt")
 
 
 class Message(BaseModel):
@@ -69,19 +69,17 @@ class Message(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    id: Optional[str] = None
+    id: str | None = None
     bot_id: str = Field(alias="botId")
     room_id: str = Field(alias="roomId")
     user_id: str = Field(alias="userId")
-    username: Optional[str] = None
-    name: Optional[str] = None
-    text: Optional[str] = None
-    message_type: Optional[Union[MessageType, str]] = Field(
-        default=None, alias="messageType"
-    )
-    attachments: Optional[List[Attachment]] = None
-    meta: Optional[Dict[str, Any]] = None
-    created_at: Optional[datetime] = Field(default=None, alias="createdAt")
+    username: str | None = None
+    name: str | None = None
+    text: str | None = None
+    message_type: MessageType | str | None = Field(default=None, alias="messageType")
+    attachments: list[Attachment] | None = None
+    meta: dict[str, Any] | None = None
+    created_at: datetime | None = Field(default=None, alias="createdAt")
 
 
 class User(BaseModel):
@@ -93,13 +91,13 @@ class User(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    id: Optional[int] = None
+    id: int | None = None
     bot_id: str = Field(alias="botId")
     user_id: str = Field(alias="userId")
     username: str
-    name: Optional[str] = None
-    created_at: Optional[datetime] = Field(default=None, alias="createdAt")
-    blocked: Optional[bool] = None
+    name: str | None = None
+    created_at: datetime | None = Field(default=None, alias="createdAt")
+    blocked: bool | None = None
 
 
 class RoomInfo(BaseModel):
@@ -113,8 +111,8 @@ class RoomInfo(BaseModel):
 
     bot_id: str = Field(alias="botId")
     room_id: str = Field(alias="roomId")
-    users: List[User]
-    last_message: Optional[Message] = Field(default=None, alias="lastMessage")
+    users: list[User]
+    last_message: Message | None = Field(default=None, alias="lastMessage")
 
 
 class ChatLayerConfig(BaseModel):
@@ -127,13 +125,13 @@ class ChatLayerConfig(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     api_key: str = Field(alias="apiKey")
-    base_url: Optional[str] = Field(default="/", alias="baseUrl")
-    bot_id: Optional[str] = Field(default=None, alias="botId")
-    bot_ids: Optional[List[str]] = Field(default=None, alias="botIds")
-    listener_type: Optional[ListenerType] = Field(default=None, alias="listenerType")
-    timeout_ms: Optional[int] = Field(default=60000, alias="timeoutMs")
-    poll_delay_ms: Optional[int] = Field(default=1000, alias="pollDelayMs")
-    on_error: Optional[Any] = Field(default=None, alias="onError")
+    base_url: str | None = Field(default="/", alias="baseUrl")
+    bot_id: str | None = Field(default=None, alias="botId")
+    bot_ids: list[str] | None = Field(default=None, alias="botIds")
+    listener_type: ListenerType | None = Field(default=None, alias="listenerType")
+    timeout_ms: int | None = Field(default=60000, alias="timeoutMs")
+    poll_delay_ms: int | None = Field(default=1000, alias="pollDelayMs")
+    on_error: Any | None = Field(default=None, alias="onError")
 
 
 class FileUploadOptions(BaseModel):
@@ -141,9 +139,9 @@ class FileUploadOptions(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    type: Optional[AttachmentType] = None
-    filename: Optional[str] = None
-    mime: Optional[str] = None
+    type: AttachmentType | None = None
+    filename: str | None = None
+    mime: str | None = None
 
 
 class FileUploadByUrlOptions(BaseModel):
@@ -152,8 +150,8 @@ class FileUploadByUrlOptions(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     url: str
-    filename: Optional[str] = None
-    type: Optional[AttachmentType] = None
+    filename: str | None = None
+    type: AttachmentType | None = None
 
 
 class GetMessagesParams(BaseModel):
@@ -161,11 +159,11 @@ class GetMessagesParams(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    bot_id: Optional[str] = Field(default=None, alias="botId")
-    room_id: Optional[str] = Field(default=None, alias="roomId")
-    limit: Optional[int] = None
-    cursor_id: Optional[Union[int, str]] = Field(default=None, alias="cursorId")
-    types: Optional[str] = None
+    bot_id: str | None = Field(default=None, alias="botId")
+    room_id: str | None = Field(default=None, alias="roomId")
+    limit: int | None = None
+    cursor_id: int | str | None = Field(default=None, alias="cursorId")
+    types: str | None = None
 
 
 class GetRoomsParams(BaseModel):
@@ -173,11 +171,9 @@ class GetRoomsParams(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    bot_id: Optional[str] = Field(default=None, alias="botId")
-    message_type: Optional[Union[MessageType, str]] = Field(
-        default=None, alias="messageType"
-    )
-    depth: Optional[int] = None
+    bot_id: str | None = Field(default=None, alias="botId")
+    message_type: MessageType | str | None = Field(default=None, alias="messageType")
+    depth: int | None = None
 
 
 class ServerResponse(BaseModel):
@@ -186,8 +182,8 @@ class ServerResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     success: bool
-    error_message: Optional[str] = Field(default=None, alias="errorMessage")
-    data: Optional[Any] = None
+    error_message: str | None = Field(default=None, alias="errorMessage")
+    data: Any | None = None
 
 
 class RoomsResponse(BaseModel):
@@ -195,4 +191,4 @@ class RoomsResponse(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    rooms: List[RoomInfo]
+    rooms: list[RoomInfo]

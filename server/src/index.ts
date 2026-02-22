@@ -3,6 +3,8 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import path from "path";
 import { specs, swaggerUi } from "./swagger";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 // File upload utilities
 import multer from "multer";
 import fs from "fs";
@@ -13,6 +15,7 @@ import { fileTypeFromBuffer } from "file-type";
 
 import { addMessage, getMessages, addUser, getBots, getRooms } from "./controllers/messageController";
 import { longPoll } from "./helpers/logpollManager";
+import { validateUrlForFetch } from "./helpers/ssrfProtection";
 
 // HMAC signing for file URLs
 const FILE_SIGNING_SECRET = process.env.FILE_SIGNING_SECRET;
@@ -130,6 +133,7 @@ const clientConfigPath = path.resolve(process.cwd(), "config", "client.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf-8")) as {
     port?: number;
     apiKeys?: string[];
+    corsOrigins?: string[];
     maxFileSize?: number;
     fileTTLSeconds?: number;
     // raw webhooks from config.json (validated below into typed WebhookSupport[])
@@ -138,12 +142,47 @@ const config = JSON.parse(fs.readFileSync(configPath, "utf-8")) as {
 
 const clientConfig = JSON.parse(fs.readFileSync(clientConfigPath, "utf-8"));
 
-const app = express();
+const app: express.Application = express();
 
+// Security headers
+app.use(helmet());
 
+// Rate limiters
+const generalLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 100, // 100 requests per minute
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, errorMessage: "Too many requests, please try again later." }
+});
 
-app.use(cors());
+const longPollLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, errorMessage: "Too many long-poll connections." }
+});
+
+const uploadLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, errorMessage: "Too many file uploads, please try again later." }
+});
+
+// CORS configuration from config file
+const corsOrigins = config.corsOrigins ?? [];
+app.use(cors({
+    origin: corsOrigins.length > 0 ? corsOrigins : false,
+    credentials: true
+}));
+
 app.use(bodyParser.json());
+
+// Apply general rate limiter to all API routes
+app.use("/api/", generalLimiter);
 
 // --- Webhook support -------------------------------------------------------
 // Load webhooks from config.webhooks (optional). Validate entries against the
@@ -581,7 +620,7 @@ async function processUploadedFiles(files: Express.Multer.File[] | undefined, bo
  *         description: Internal server error
  */
 // POST upload API - accepts a single file under field name "file"
-app.post("/api/v1/uploadFile", apiKeyMiddleware, upload.array("file"), async (req, res) => {
+app.post("/api/v1/uploadFile", apiKeyMiddleware, uploadLimiter, upload.array("file"), async (req, res) => {
     try {
         const files = (req as any).files as Express.Multer.File[] | undefined;
         const body = req.body || {};
@@ -628,13 +667,27 @@ app.post("/api/v1/uploadFile", apiKeyMiddleware, upload.array("file"), async (re
  * - Fetches each URL, infers mime/extension, writes files to disk using server-generated id + extension,
  *   and returns attachments[] similar to uploadFile endpoint (internal attachments have url = "" and no _storedFilename).
  */
-app.post("/api/v1/uploadFileByURL", apiKeyMiddleware, async (req, res) => {
+app.post("/api/v1/uploadFileByURL", apiKeyMiddleware, uploadLimiter, async (req, res) => {
     try {
         const body = req.body || {};
         const inputFiles = Array.isArray(body.files) ? body.files : null;
 
         if (!inputFiles || inputFiles.length === 0) {
             return sendError(res, 400, "no files provided");
+        }
+
+        // SSRF protection: validate all URLs before fetching
+        for (const file of inputFiles) {
+            if (!file || typeof file.url !== "string") {
+                return sendError(res, 400, "each file must include a url");
+            }
+            const validation = validateUrlForFetch(file.url);
+            if (!validation.valid) {
+                return sendError(res, 400, "invalid_url", { 
+                    url: file.url, 
+                    reason: validation.reason 
+                });
+            }
         }
 
         const attachments: any[] = [];
@@ -1210,27 +1263,18 @@ app.get("/api/v1/getBots", apiKeyMiddleware, async (_req, res) => {
  */
 app.get("/api/v1/getRooms", apiKeyMiddleware, async (req, res) => {
     try {
-        const { botId, messageType, depth } = req.query as any;
+        const { botId, messageType, depth, limit, cursorId } = req.query as any;
         if (!botId) {
             return sendError(res, 400, "botId is required");
         }
 
-        const opts: Parameters<typeof getRooms>[0] = {
+        const result = await getRooms({
             botId: String(botId),
-        };
-
-        if (messageType) {
-            opts.messageType = String(messageType);
-        }
-
-        if (depth) {
-            const parsedDepth = parseInt(depth, 10);
-            if (!isNaN(parsedDepth) && parsedDepth > 0) {
-                opts.depth = parsedDepth;
-            }
-        }
-
-        const result = await getRooms(opts);
+            messageType: messageType ? String(messageType) : undefined,
+            depth: depth ? parseInt(depth, 10) : undefined,
+            limit: limit ? parseInt(limit, 10) : undefined,
+            cursorId: cursorId ? String(cursorId) : undefined,
+        });
         // Populate signed URLs in lastMessage attachments
         if (result.rooms) {
             for (const room of result.rooms) {
@@ -1287,7 +1331,7 @@ app.get("/api/v1/getRooms", apiKeyMiddleware, async (req, res) => {
  *       200:
  *         description: array of messages (may be empty on timeout)
  */
-app.get("/api/v1/getUpdates", apiKeyMiddleware, async (req, res) => {
+app.get("/api/v1/getUpdates", apiKeyMiddleware, longPollLimiter, async (req, res) => {
     try {
         // New: support botIds[] (comma-separated) and listenerType (bot|ui).
         // - UI listeners: listenerType=ui and botIds may be omitted or empty => listen to all bots

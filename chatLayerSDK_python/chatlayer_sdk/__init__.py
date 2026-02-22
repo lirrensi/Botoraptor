@@ -40,7 +40,7 @@ Example:
     asyncio.run(main())
 """
 
-from .client import ChatLayer, ChatLayerError, ChatLayerAPIError
+from .client import ChatLayer, ChatLayerAPIError, ChatLayerError
 from .models import (
     Attachment,
     AttachmentType,
