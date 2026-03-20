@@ -2,6 +2,50 @@
 
 <img src="assets/logo.jpg" alt="Botoraptor logo" width="420" />
 
+## TL;DR - What this thing actually is
+
+Botoraptor is a conversation bridge for bots that do not come with a usable human support inbox.
+
+If your bot lives in Telegram, Discord, WhatsApp, Slack, a custom app, an automation flow, or any other system that can send HTTP requests and receive webhooks, Botoraptor sits in the middle and handles the two-way conversation layer.
+
+- Your bot, server, or automation sends incoming messages into Botoraptor via the SDK or API
+- Botoraptor stores the conversation and shows it in a manager-facing web UI
+- Human operators reply from that UI
+- Botoraptor delivers those replies back to your system through a webhook or SDK listener
+
+So the short version is: your bot keeps doing bot things, and Botoraptor gives it the missing interface for human-in-the-loop messaging.
+
+## Who it's for
+
+Botoraptor is for developers who already have a bot, automation, or backend flow, but do not have a good human-facing conversation UI.
+
+It is especially useful when you need a manager or operator to:
+
+- see what is happening inside bot conversations in a clear interface
+- inspect granular events and message flow instead of guessing from logs
+- jump in and send messages back to the user from a proper UI
+- keep the existing bot stack instead of rebuilding everything around a new platform
+
+## Why it's useful
+
+Many bot frameworks are good at the programmatic side, but they stop short when you need real operational visibility.
+
+Common pain points Botoraptor solves:
+
+- your bot can receive and send messages, but your team has no inbox to monitor conversations
+- managers cannot easily step in when automation fails, stalls, or needs a human reply
+- message history is scattered across logs, scripts, and platform-specific tools
+- every bot platform has its own constraints, but you want one simple middleware layer for all of them
+
+Botoraptor gives your managers a clear UI to watch conversations, understand what happened, and type messages back. Your bot or server then picks up those outgoing messages through a webhook or SDK listener and delivers them to the end user.
+
+## Quick use cases
+
+- `Telegram support bot` - log incoming chats, let managers reply from the web UI, send those replies back through your Telegram bot
+- `WhatsApp or Discord bot` - keep your current bot logic, but add a real operations interface for humans
+- `Custom backend bot` - push events from your own server, then listen for outbound human replies by webhook
+- `Automation tools` - connect webhook-friendly tools like Make or n8n and use Botoraptor as the human conversation layer
+
 Formerly `ChatLayer`
 
 **Human-in-the-loop conversation middleware for customer-facing bots**
