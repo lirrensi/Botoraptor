@@ -81,5 +81,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-[3.1.0]: https://github.com/lirrensi/ChatLayer/compare/v3.0.0...v3.1.0
-[3.0.0]: https://github.com/lirrensi/ChatLayer/releases/tag/v3.0.0
+[3.1.0]: https://github.com/lirrensi/Botoraptor/compare/v3.0.0...v3.1.0
+[3.0.0]: https://github.com/lirrensi/Botoraptor/releases/tag/v3.0.0

@@ -189,8 +189,8 @@ Legacy `ChatLayer` names remain available as compatibility aliases in SDKs and U
 
 ```bash
 # 1. Clone and configure
-git clone https://github.com/lirrensi/ChatLayer.git
-cd ChatLayer
+git clone https://github.com/lirrensi/Botoraptor.git
+cd Botoraptor
 nano server/config/server.json  # Set your API keys
 echo "FILE_SIGNING_SECRET=your-secret-key" > .env
 
@@ -204,8 +204,8 @@ docker-compose up -d
 
 ```bash
 # 1. Clone
-git clone https://github.com/lirrensi/ChatLayer.git
-cd ChatLayer
+git clone https://github.com/lirrensi/Botoraptor.git
+cd Botoraptor
 
 # 2. Build frontend
 cd web_ui && pnpm install && pnpm run build && cd ..

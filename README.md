@@ -38,8 +38,8 @@ If something feels "broken" after pulling a newer version, check custom scripts,
 ### Docker (Recommended)
 
 ```bash
-git clone https://github.com/lirrensi/ChatLayer.git
-cd ChatLayer
+git clone https://github.com/lirrensi/Botoraptor.git
+cd Botoraptor
 nano server/config/server.json  # Set API keys
 echo "FILE_SIGNING_SECRET=your-secret-key" > .env
 docker-compose up -d
@@ -50,8 +50,8 @@ Server runs at `http://localhost:31000`
 ### Manual
 
 ```bash
-git clone https://github.com/lirrensi/ChatLayer.git
-cd ChatLayer
+git clone https://github.com/lirrensi/Botoraptor.git
+cd Botoraptor
 
 # Build frontend
 cd web_ui && pnpm install && pnpm run build && cd ..
