@@ -49,6 +49,8 @@ Legacy `ChatLayer` names remain available as compatibility aliases in SDKs and U
 | **Web UI** | Vue 3 + Ionic. Manager-facing interface for viewing and responding to conversations. |
 | **Node SDK** | TypeScript client for Node.js bots and web apps. |
 | **Python SDK** | Async Python client for Python bots. |
+| **Go SDK** | Thin Go HTTP client for bots and services. |
+| **PHP SDK** | Drop-in PHP client for bots and services. |
 
 ---
 
@@ -283,6 +285,8 @@ Botoraptor deliberately does NOT:
 | [arch_web-ui.md](arch_web-ui.md) | Web UI architecture |
 | [arch_sdk-node.md](arch_sdk-node.md) | Node SDK reference |
 | [arch_sdk-python.md](arch_sdk-python.md) | Python SDK reference |
+| [arch_sdk-go.md](arch_sdk-go.md) | Go SDK reference |
+| [arch_sdk-php.md](arch_sdk-php.md) | PHP SDK reference |
 
 ---
 

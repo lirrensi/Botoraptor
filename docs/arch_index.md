@@ -8,6 +8,8 @@
 | [arch_web-ui.md](arch_web-ui.md) | Frontend — Vue 3 + Ionic, state management, routing, deeplinking |
 | [arch_sdk-node.md](arch_sdk-node.md) | Node.js/TypeScript SDK — client for bots and web apps |
 | [arch_sdk-python.md](arch_sdk-python.md) | Python SDK — async client for Python bots |
+| [arch_sdk-go.md](arch_sdk-go.md) | Go SDK — thin HTTP client for bots and services |
+| [arch_sdk-php.md](arch_sdk-php.md) | PHP SDK — drop-in client for bots and services |
 
 ---
 
@@ -19,7 +21,7 @@
 │  (Telegram, Discord, WhatsApp, Slack, Custom bots)             │
 └─────────────────────────────────────────────────────────────────┘
                     │                           │
-                    │ SDK (Node/Python)         │ HTTP API
+                    │ SDK (Node/Python/Go/PHP)  │ HTTP API
                     ▼                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      arch_server.md                             │
@@ -49,3 +51,5 @@
 | Web UI | TypeScript | Vue 3 + Ionic | served by server |
 | Node SDK | TypeScript | Native fetch | — |
 | Python SDK | Python 3.10+ | httpx + pydantic | — |
+| Go SDK | Go | net/http | — |
+| PHP SDK | PHP | cURL | — |

@@ -141,6 +141,8 @@ If hosting the Web UI on a **different domain** than the API server, you **must*
 | **Web UI** | Manager-facing interface (Vue 3 + Ionic) |
 | **Node SDK** | TypeScript client for bots and web apps |
 | **Python SDK** | Async Python client for bots |
+| **Go SDK** | Thin Go HTTP client for bots and services |
+| **PHP SDK** | Drop-in PHP client for bots and services |
 
 ---
 
@@ -202,6 +204,8 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | [docs/arch_web-ui.md](docs/arch_web-ui.md) | Web UI architecture |
 | [docs/arch_sdk-node.md](docs/arch_sdk-node.md) | Node SDK reference |
 | [docs/arch_sdk-python.md](docs/arch_sdk-python.md) | Python SDK reference |
+| [docs/arch_sdk-go.md](docs/arch_sdk-go.md) | Go SDK reference |
+| [docs/arch_sdk-php.md](docs/arch_sdk-php.md) | PHP SDK reference |
 
 ---
 
