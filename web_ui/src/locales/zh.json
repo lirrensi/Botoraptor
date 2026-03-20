@@ -3,7 +3,7 @@
     "langNativeName": "中文",
     "rtl": false,
     "ui.logout": "退出",
-    "app.title": "ChatLayerUI 管理区域",
+    "app.title": "Botoraptor 管理区域",
     "home.select_chat_hint": "选择一个聊天以打开",
     "home.back": "返回",
     "home.refresh_bots_aria": "刷新机器人",

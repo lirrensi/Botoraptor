@@ -1,7 +1,21 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 
-const API_KEY_STORAGE = "chatlayer_api_key";
+const API_KEY_STORAGE = "botoraptor_api_key";
+const LEGACY_API_KEY_STORAGE = "chatlayer_api_key";
 const DEFAULT_BASE = (import.meta as any).env?.VITE_API_BASE || "/";
+
+function readStoredApiKey(): string | null {
+    const primary = localStorage.getItem(API_KEY_STORAGE);
+    if (primary) return primary;
+
+    const legacy = localStorage.getItem(LEGACY_API_KEY_STORAGE);
+    if (legacy) {
+        localStorage.setItem(API_KEY_STORAGE, legacy);
+        return legacy;
+    }
+
+    return null;
+}
 
 /**
  * Axios instance used across the app.
@@ -13,7 +27,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const key = localStorage.getItem(API_KEY_STORAGE);
+    const key = getApiKey();
     if (key) {
         // normalize/merge headers safely and avoid strict type issues by using a local cast
         (config.headers as any) = { ...(config.headers as any), Authorization: `Bearer ${key}` };
@@ -30,7 +44,7 @@ api.interceptors.response.use(
         if (status === 401 || status === 403) {
             try {
                 // Clear stored key immediately so subsequent requests won't continuously fail
-                localStorage.removeItem(API_KEY_STORAGE);
+                clearApiKey();
             } catch (e) {
                 // ignore storage errors
             }
@@ -51,14 +65,16 @@ api.interceptors.response.use(
  */
 export function setApiKey(key: string) {
     localStorage.setItem(API_KEY_STORAGE, key);
+    localStorage.setItem(LEGACY_API_KEY_STORAGE, key);
 }
 
 export function getApiKey(): string | null {
-    return localStorage.getItem(API_KEY_STORAGE);
+    return readStoredApiKey();
 }
 
 export function clearApiKey() {
     localStorage.removeItem(API_KEY_STORAGE);
+    localStorage.removeItem(LEGACY_API_KEY_STORAGE);
 }
 
 /**

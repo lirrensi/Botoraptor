@@ -1,7 +1,7 @@
 {
     "name": "chat_layer_server",
     "version": "1.4.0",
-    "description": "ChatLayer - human-in-the-loop conversation middleware",
+    "description": "Botoraptor - human-in-the-loop conversation middleware",
     "main": "dist/server.js",
     "type": "module",
     "scripts": {

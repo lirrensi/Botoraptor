@@ -1,7 +1,7 @@
-# ChatLayer Web UI
+# Botoraptor Web UI
 
-This is a minimal Ionic + Vue frontend for ChatLayer. It provides:
-- API key authentication (stored in localStorage as `chatlayer_api_key`)
+This is a minimal Ionic + Vue frontend for Botoraptor. It provides:
+- API key authentication (stored in localStorage as `botoraptor_api_key`, with fallback to legacy `chatlayer_api_key`)
 - Two-column responsive layout (desktop) and mobile-adaptive views
 - Chat list (left) and chat view (right)
 - Message sending via POST /addMessage
@@ -27,7 +27,8 @@ Configuration
 - API key (authentication)
   - On first load the app will prompt for `API key`.
   - The key is validated by calling `GET /getMessages?botId=test-bot&limit=1`.
-  - If accepted, the key is stored in localStorage under `chatlayer_api_key` and will be sent as `x-api-key` header for all requests.
+  - If accepted, the key is stored in localStorage under `botoraptor_api_key` and mirrored to legacy `chatlayer_api_key` during the transition period.
+  - Requests use `Authorization: Bearer <api key>`.
 
 Files of interest
 

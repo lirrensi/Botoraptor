@@ -5,13 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "chatlayersdk-python"
 version = "1.4.0"
-description = "ChatLayer - human-in-the-loop conversation middleware - Python SDK"
+description = "Botoraptor - human-in-the-loop conversation middleware - Python SDK"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
-    { name = "ChatLayer Team" }
+    { name = "Botoraptor Team" }
 ]
 keywords = [
     "chatlayer",
@@ -56,10 +56,11 @@ Repository = "https://github.com/your-org/chatlayer-sdk-python"
 Issues = "https://github.com/your-org/chatlayer-sdk-python/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["chatlayer_sdk"]
+packages = ["chatlayer_sdk", "botoraptor_sdk"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+    "/botoraptor_sdk",
     "/chatlayer_sdk",
     "/tests",
     "/README.md",
@@ -89,7 +90,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["chatlayer_sdk"]
+known-first-party = ["chatlayer_sdk", "botoraptor_sdk"]
 
 [tool.mypy]
 python_version = "3.10"

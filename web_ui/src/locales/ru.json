@@ -3,7 +3,7 @@
     "langNativeName": "Русский",
     "rtl": false,
     "ui.logout": "Выйти",
-    "app.title": "ChatLayer UI Паненель чатов",
+    "app.title": "Botoraptor Панель чатов",
     "home.select_chat_hint": "Выберите чат, чтобы открыть",
     "home.back": "Назад",
     "home.refresh_bots_aria": "Обновить ботов",

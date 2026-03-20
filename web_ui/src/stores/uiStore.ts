@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
 import { ref, computed, watch } from "vue";
 import { IonButton, toastController } from "@ionic/vue";
-import { ChatLayer, type Message, type RoomInfo } from "../../../chatLayerSDK_node/chatLayerSDK.ts";
+import { Botoraptor, type Message, type RoomInfo } from "../../../chatLayerSDK_node/botoraptor.ts";
+import { getApiKey as getStoredApiKey } from "../services/api";
 import { t } from "../i18n";
 import localforage from "localforage";
 import { notificationManager } from "../helpers/notificationManager";
@@ -62,8 +63,8 @@ const roomFilter = ref<{
     // Unread messages tracking - roomKey is "botId_roomId"
     const unread = ref<Record<string, number>>({});
 
-    // ChatLayer SDK instance + unsubscribe
-    let chat: ChatLayer | null = null;
+    // Botoraptor SDK instance + unsubscribe
+    let chat: Botoraptor | null = null;
     let unsubscribe: (() => void) | null = null;
     let started = false;
     
@@ -143,7 +144,7 @@ const roomFilter = ref<{
 
     function getApiKey(): string | null {
         try {
-            return localStorage.getItem("chatlayer_api_key");
+            return getStoredApiKey();
         } catch {
             return null;
         }
@@ -153,7 +154,7 @@ const roomFilter = ref<{
         if (chat) return chat;
         const key = getApiKey();
         if (!key) throw new Error("API key missing");
-        chat = new ChatLayer({ apiKey: key, listenerType: "ui" });
+        chat = new Botoraptor({ apiKey: key, listenerType: "ui" });
         return chat;
     }
 
@@ -297,7 +298,7 @@ const roomFilter = ref<{
         }
     }
 
-    // Event reaction logic for incoming messages (from ChatLayer longpoll)
+    // Event reaction logic for incoming messages (from Botoraptor longpoll)
     async function onIncomingMessage(m: Message) {
         try {
             // Handle notifications based on notification level setting
@@ -359,7 +360,7 @@ const roomFilter = ref<{
             notificationManager.showNotification({
                 title,
                 body,
-                tag: `chatlayer-${m.botId}-${m.roomId}`
+                tag: `botoraptor-${m.botId}-${m.roomId}`
             });
         } catch (err) {
             console.error("uiStore: handleNotification error", err);
@@ -419,7 +420,7 @@ const roomFilter = ref<{
             try {
                 cl.start({ botIds: null, listenerType: "ui" });
             } catch (e) {
-                // ChatLayer.start may throw if misconfigured; still keep onMessage subscription in place
+                // Botoraptor.start may throw if misconfigured; still keep onMessage subscription in place
                 console.error("uiStore: chat.start threw", e);
             }
             started = true;

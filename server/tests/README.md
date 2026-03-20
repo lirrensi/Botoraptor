@@ -1,4 +1,4 @@
-# ChatLayer Server Tests
+# Botoraptor Server Tests
 
 ⚠️ **WARNING: These tests use the database directly!**
 

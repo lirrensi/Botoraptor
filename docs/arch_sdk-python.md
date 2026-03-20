@@ -1,18 +1,20 @@
 # Python SDK Architecture
 
-Async Python SDK for ChatLayer — httpx + pydantic.
+Async Python SDK for Botoraptor — httpx + pydantic.
 
 ---
 
 ## Overview
 
-An async-first Python client for integrating bots with ChatLayer. Uses `httpx` for HTTP and `pydantic` for type validation.
+An async-first Python client for integrating bots with Botoraptor. Uses `httpx` for HTTP and `pydantic` for type validation.
+
+Public docs now prefer `Botoraptor`, while the legacy `chatlayer_sdk` package remains available as a compatibility alias.
 
 **Scope Boundary:**
 
 - **This component owns**: HTTP communication, response parsing, async polling loop
 - **This component does NOT own**: Message storage, bot logic
-- **Boundary interfaces**: Calls ChatLayer server REST API
+- **Boundary interfaces**: Calls Botoraptor server REST API
 
 ---
 
@@ -28,10 +30,10 @@ pip install chatlayer-sdk
 
 ```python
 import asyncio
-from chatlayer_sdk import ChatLayer
+from botoraptor_sdk import Botoraptor
 
 async def main():
-    client = ChatLayer(
+    client = Botoraptor(
         api_key="your-api-key",
         base_url="http://localhost:31000",
         bot_ids=["my-bot"],
@@ -67,9 +69,9 @@ asyncio.run(main())
 ## Configuration
 
 ```python
-from chatlayer_sdk import ChatLayer, ChatLayerConfig
+from botoraptor_sdk import Botoraptor, BotoraptorConfig
 
-config = ChatLayerConfig(
+config = BotoraptorConfig(
     api_key="your-api-key",
     base_url="https://api.example.com",
     bot_ids=["bot-1", "bot-2"],
@@ -78,7 +80,7 @@ config = ChatLayerConfig(
     poll_delay_ms=1000,
 )
 
-client = ChatLayer(**config.model_dump())
+client = Botoraptor(**config.model_dump())
 ```
 
 ---
@@ -123,7 +125,7 @@ client = ChatLayer(**config.model_dump())
 ## Types
 
 ```python
-from chatlayer_sdk import Message, Attachment, User, MessageType
+from botoraptor_sdk import Message, Attachment, User, MessageType
 
 # Message
 message = Message(
@@ -150,7 +152,7 @@ attachment = Attachment(
 Recommended for proper resource cleanup:
 
 ```python
-async with ChatLayer(api_key="key", base_url="...") as client:
+async with Botoraptor(api_key="key", base_url="...") as client:
     message = await client.add_message({...})
     # Automatic cleanup on exit
 ```
@@ -181,13 +183,13 @@ await client.close()
 ## Error Handling
 
 ```python
-from chatlayer_sdk import ChatLayerError, ChatLayerAPIError
+from botoraptor_sdk import BotoraptorError, BotoraptorAPIError
 
 try:
     await client.add_message(msg)
-except ChatLayerAPIError as e:
+except BotoraptorAPIError as e:
     print(f"API error {e.status_code}: {e.response_text}")
-except ChatLayerError as e:
+except BotoraptorError as e:
     print(f"SDK error: {e}")
 ```
 

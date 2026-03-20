@@ -134,6 +134,9 @@ class ChatLayerConfig(BaseModel):
     on_error: Any | None = Field(default=None, alias="onError")
 
 
+BotoraptorConfig = ChatLayerConfig
+
+
 class FileUploadOptions(BaseModel):
     """Options for file upload operations."""
 

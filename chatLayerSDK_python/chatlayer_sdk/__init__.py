@@ -40,10 +40,18 @@ Example:
     asyncio.run(main())
 """
 
-from .client import ChatLayer, ChatLayerAPIError, ChatLayerError
+from .client import (
+    Botoraptor,
+    BotoraptorAPIError,
+    BotoraptorError,
+    ChatLayer,
+    ChatLayerAPIError,
+    ChatLayerError,
+)
 from .models import (
     Attachment,
     AttachmentType,
+    BotoraptorConfig,
     ChatLayerConfig,
     FileUploadByUrlOptions,
     FileUploadOptions,
@@ -61,12 +69,16 @@ from .models import (
 __version__ = "1.4.0"
 __all__ = [
     # Client
+    "Botoraptor",
+    "BotoraptorError",
+    "BotoraptorAPIError",
     "ChatLayer",
     "ChatLayerError",
     "ChatLayerAPIError",
     # Models
     "Attachment",
     "AttachmentType",
+    "BotoraptorConfig",
     "ChatLayerConfig",
     "FileUploadByUrlOptions",
     "FileUploadOptions",

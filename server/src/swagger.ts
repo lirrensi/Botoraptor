@@ -24,9 +24,9 @@ const options: swaggerJsdoc.Options = {
     definition: {
         openapi: "3.0.0",
         info: {
-            title: "ChatLayer API",
+            title: "Botoraptor API",
             version: "1.0.0",
-            description: "Simple human-in-the-loop chat middleware API",
+            description: "Simple human-in-the-loop chat middleware API with ChatLayer compatibility",
         },
         servers: [
             {

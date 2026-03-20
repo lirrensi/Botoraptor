@@ -527,7 +527,7 @@ async function uploadPending() {
     // Server accepts repeated "file" fields and parallel "type" / "filename" fields.
     const toUpload = pendingFiles.value.filter(p => p.state === "uploading" && !p.attachment);
     if (toUpload.length === 0) return;
-    const key = localStorage.getItem("chatlayer_api_key");
+    const key = getApiKey();
     const url = `/api/v1/uploadFile`;
 
     // Helper to infer server 'type' from MIME

@@ -1,6 +1,8 @@
-# ChatLayer SDK (Python)
+# Botoraptor SDK (Python)
 
-Async Python SDK for ChatLayer. Uses httpx + pydantic.
+Async Python SDK for Botoraptor. Uses httpx + pydantic.
+
+Legacy `chatlayer_sdk` imports remain supported, but new integrations should import `Botoraptor` from `botoraptor_sdk`.
 
 ## Installation
 
@@ -12,10 +14,10 @@ pip install chatlayer-sdk
 
 ```python
 import asyncio
-from chatlayer_sdk import ChatLayer
+from botoraptor_sdk import Botoraptor
 
 async def main():
-    client = ChatLayer(
+    client = Botoraptor(
         api_key="your-api-key",
         base_url="http://localhost:31000",
         bot_ids=["my-bot"],
@@ -47,7 +49,7 @@ asyncio.run(main())
 ## Configuration
 
 ```python
-client = ChatLayer(
+client = Botoraptor(
     api_key="your-api-key",
     base_url="https://api.example.com",
     bot_ids=["bot-1"],
@@ -73,7 +75,7 @@ client = ChatLayer(
 ## Context Manager
 
 ```python
-async with ChatLayer(api_key="key", base_url="...") as client:
+async with Botoraptor(api_key="key", base_url="...") as client:
     await client.add_message({...})
 ```
 

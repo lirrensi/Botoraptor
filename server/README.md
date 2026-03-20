@@ -1,6 +1,8 @@
-# ChatLayer Server
+# Botoraptor Server
 
 Express.js + TypeScript server with SQLite, long-polling, webhooks, and file uploads.
+
+Legacy `ChatLayer` naming still appears in some internal paths during the transition.
 
 ## Quick Start
 

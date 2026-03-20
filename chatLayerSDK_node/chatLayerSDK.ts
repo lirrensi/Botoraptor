@@ -88,6 +88,8 @@ export type ChatLayerConfig = {
     pollDelayMs?: number; // retry delay on error
 };
 
+export type BotoraptorConfig = ChatLayerConfig;
+
 export type RoomInfo = {
     botId: string;
     roomId: string;
@@ -1147,7 +1149,10 @@ export class ChatLayer {
         }
         // also emit to console for visibility
         try {
-            console.error("[ChatLayer sdk] error:", err);
+            console.error("[Botoraptor SDK] error:", err);
         } catch { }
     }
 }
+
+export { ChatLayer as Botoraptor };
+export default ChatLayer;

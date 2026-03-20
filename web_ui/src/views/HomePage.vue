@@ -150,19 +150,22 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed, ref, watch } from "vue";
+import { onMounted, onUnmounted, computed, ref, watch, watchEffect } from "vue";
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonIcon, IonModal, IonLoading, IonToast } from "@ionic/vue";
 import { refreshOutline, settingsOutline } from "ionicons/icons";
 import ChatList from "../components/ChatList.vue";
 import ChatView from "../components/ChatView.vue";
 import LanguagePicker from "../components/LanguagePicker.vue";
 import SettingsModal from "../components/SettingsModal.vue";
-import { ChatLayer } from "../../../chatLayerSDK_node/chatLayerSDK.ts";
+import { Botoraptor } from "../../../chatLayerSDK_node/botoraptor.ts";
+import { getApiKey } from "../services/api";
 import { useUiStore } from "../stores/uiStore";
 import { useRoute, useRouter } from "vue-router";
 import { parseHash, buildHash } from "../utils/hashParser";
+import { useI18n } from "vue-i18n";
 
 import { storeToRefs } from "pinia";
+const { t } = useI18n();
 const ui = useUiStore();
 const route = useRoute();
 const router = useRouter();
@@ -212,6 +215,10 @@ watch(
 
 const windowWidth = ref<number>(window.innerWidth);
 const isMobile = computed(() => windowWidth.value < 800);
+
+watchEffect(() => {
+    document.title = t("app.title");
+});
 
 const leftWidthPx = ref<number>(320);
 const isDragging = ref(false);
@@ -302,9 +309,9 @@ function onBack() {
 
 async function onSendMessage(payload: { roomId?: string; text: string; attachments?: any[] }) {
     try {
-        const key = localStorage.getItem("chatlayer_api_key");
+        const key = getApiKey();
         if (!key) throw new Error("API key missing");
-        const chat = new ChatLayer({ apiKey: key });
+        const chat = new Botoraptor({ apiKey: key });
         await chat.addManagerMessage({
             botId: ui.selectedBotId || (ui.messages[0] && ui.messages[0].botId) || "test-bot",
             roomId: payload.roomId || ui.selectedRoomId || "default",

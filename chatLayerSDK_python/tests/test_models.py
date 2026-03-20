@@ -3,6 +3,8 @@
 import pytest
 from datetime import datetime
 
+from botoraptor_sdk import Botoraptor, BotoraptorConfig
+from chatlayer_sdk import ChatLayer
 from chatlayer_sdk.models import (
     Attachment,
     AttachmentType,
@@ -197,3 +199,15 @@ class TestFileUploadOptions:
         assert options.type == AttachmentType.IMAGE
         assert options.filename == "photo.jpg"
         assert options.mime == "image/jpeg"
+
+
+class TestBotoraptorAliases:
+    """Tests for Botoraptor compatibility aliases."""
+
+    def test_botoraptor_class_alias(self):
+        """Test that Botoraptor resolves to the ChatLayer client."""
+        assert Botoraptor is ChatLayer
+
+    def test_botoraptor_config_alias(self):
+        """Test that BotoraptorConfig reuses ChatLayerConfig."""
+        assert BotoraptorConfig is ChatLayerConfig

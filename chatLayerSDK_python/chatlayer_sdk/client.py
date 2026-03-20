@@ -194,7 +194,7 @@ class ChatLayer:
 
     def _handle_error(self, err: Exception) -> None:
         """Handle an error by calling the on_error callback and logging."""
-        logger.error(f"[ChatLayer SDK] error: {err}")
+        logger.error(f"[Botoraptor SDK] error: {err}")
         if self._on_error:
             with contextlib.suppress(Exception):
                 self._on_error(err)
@@ -993,3 +993,8 @@ class ChatLayer:
 
         self._normalize_attachments_list(messages)
         return messages
+
+
+Botoraptor = ChatLayer
+BotoraptorError = ChatLayerError
+BotoraptorAPIError = ChatLayerAPIError

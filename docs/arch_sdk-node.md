@@ -1,18 +1,20 @@
 # Node SDK Architecture
 
-TypeScript SDK for ChatLayer — zero dependencies, works in Node.js and browsers.
+TypeScript SDK for Botoraptor — zero dependencies, works in Node.js and browsers.
 
 ---
 
 ## Overview
 
-A lightweight client for integrating bots and web applications with ChatLayer. Uses native `fetch` API.
+A lightweight client for integrating bots and web applications with Botoraptor. Uses native `fetch` API.
+
+Public docs now prefer `Botoraptor`, while the legacy `ChatLayer` export remains available as a compatibility alias.
 
 **Scope Boundary:**
 
 - **This component owns**: HTTP communication, response normalization, long-polling loop
 - **This component does NOT own**: Message storage, UI rendering, bot logic
-- **Boundary interfaces**: Calls ChatLayer server REST API
+- **Boundary interfaces**: Calls Botoraptor server REST API
 
 ---
 
@@ -29,9 +31,9 @@ Or copy `chatLayerSDK.ts` directly into your project.
 ## Quick Start
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from '../chatLayerSDK_node/botoraptor';
 
-const client = new ChatLayer({
+const client = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'http://localhost:31000',
   botIds: ['my-bot'],
@@ -60,7 +62,7 @@ await client.addMessage({
 ## Configuration
 
 ```typescript
-interface ChatLayerConfig {
+interface BotoraptorConfig {
   apiKey: string;              // Required
   baseUrl?: string;            // Default: "/"
   botIds?: string[];           // Bot IDs to listen for
@@ -171,10 +173,10 @@ client.stop();   // Stops polling
 ## Error Handling
 
 ```typescript
-const client = new ChatLayer({
+const client = new Botoraptor({
   apiKey: 'key',
   onError: (err) => {
-    console.error('ChatLayer error:', err);
+    console.error('Botoraptor error:', err);
   },
 });
 

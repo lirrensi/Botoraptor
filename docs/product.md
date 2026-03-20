@@ -1,4 +1,4 @@
-# ChatLayer
+# Botoraptor
 
 **Human-in-the-loop conversation middleware for customer-facing bots**
 
@@ -6,9 +6,11 @@
 
 ## Overview
 
-ChatLayer is an independent component that transparently adds a human-in-the-loop to any bot/automated chat. It logs all incoming messages from your bots and provides a web interface for managers to monitor conversations and send messages back.
+Botoraptor is an independent component that transparently adds a human-in-the-loop to any bot/automated chat. It logs all incoming messages from your bots and provides a web interface for managers to monitor conversations and send messages back.
 
-Most bot frameworks provide no built-in interface for monitoring customer conversations or allowing human operators to intervene. ChatLayer fills this gap with a simple, self-contained solution that you can deploy on your own premises.
+Most bot frameworks provide no built-in interface for monitoring customer conversations or allowing human operators to intervene. Botoraptor fills this gap with a simple, self-contained solution that you can deploy on your own premises.
+
+Legacy `ChatLayer` names remain available as compatibility aliases in SDKs and UI storage during the transition.
 
 ---
 
@@ -27,7 +29,7 @@ Most bot frameworks provide no built-in interface for monitoring customer conver
 
 ```
 ┌─────────────┐         SDK          ┌──────────────┐
-│   Your Bot  │ ───────────────────► │ ChatLayer    │
+│   Your Bot  │ ───────────────────► │ Botoraptor   │
 │ (Telegram,  │   send messages      │   Server     │
 │ Discord,    │                       │              │
 │ WhatsApp...)│◄──────────────────────┤    + SQLite  │
@@ -52,8 +54,8 @@ Most bot frameworks provide no built-in interface for monitoring customer conver
 
 ## How It Works
 
-1. **Your bot** uses the SDK to send every incoming message to ChatLayer
-2. **ChatLayer** stores messages in its database and serves the web UI
+1. **Your bot** uses the SDK to send every incoming message to Botoraptor
+2. **Botoraptor** stores messages in its database and serves the web UI
 3. **Managers** view conversations and send messages through the web interface
 4. **Your bot** listens for outgoing messages and delivers them to users
 
@@ -236,7 +238,7 @@ pnpm run dev
 
 ### Self-Contained Deployment
 
-ChatLayer is designed to be self-contained:
+Botoraptor is designed to be self-contained:
 
 - **Database**: SQLite file in `server/db/` (no external database needed)
 - **Web App**: Served directly by the Express server
@@ -263,7 +265,7 @@ ChatLayer is designed to be self-contained:
 
 ## Non-Goals
 
-ChatLayer deliberately does NOT:
+Botoraptor deliberately does NOT:
 
 - Provide user authentication for the web UI (assumes trusted network)
 - Replace your bot framework (works alongside it)

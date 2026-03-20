@@ -1,5 +1,5 @@
 """
-Example usage of ChatLayer SDK.
+Example usage of Botoraptor SDK.
 
 This example demonstrates:
 1. Sending messages
@@ -9,15 +9,15 @@ This example demonstrates:
 """
 
 import asyncio
-from chatlayer_sdk import (
-    ChatLayer,
+from botoraptor_sdk import (
+    Botoraptor,
     Message,
     MessageType,
     AttachmentType,
     FileUploadOptions,
     FileUploadByUrlOptions,
-    ChatLayerError,
-    ChatLayerAPIError,
+    BotoraptorError,
+    BotoraptorAPIError,
 )
 
 
@@ -25,7 +25,7 @@ async def example_basic_message():
     """Example 1: Basic message sending."""
     print("\n=== Example 1: Basic Message ===")
 
-    client = ChatLayer(api_key="your-api-key-here", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key-here", base_url="https://api.example.com")
 
     try:
         message = await client.add_message(
@@ -39,9 +39,9 @@ async def example_basic_message():
         print(f"✓ Message sent successfully!")
         print(f"  ID: {message.id}")
         print(f"  Text: {message.text}")
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -51,21 +51,21 @@ async def example_message_with_manager():
     """Example 2: Send message as manager."""
     print("\n=== Example 2: Manager Message ===")
 
-    client = ChatLayer(api_key="your-api-key-here", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key-here", base_url="https://api.example.com")
 
     try:
         manager_message = await client.add_manager_message(
-            botId="my-bot",
-            roomId="room-123",
-            userId="manager-789",
+            bot_id="my-bot",
+            room_id="room-123",
+            user_id="manager-789",
             text="I've taken over this conversation to help you.",
         )
         print(f"✓ Manager message sent successfully!")
         print(f"  ID: {manager_message.id}")
         print(f"  Type: {manager_message.message_type}")
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -75,20 +75,20 @@ async def example_service_alert():
     """Example 3: Send service alert."""
     print("\n=== Example 3: Service Alert ===")
 
-    client = ChatLayer(api_key="your-api-key-here", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key-here", base_url="https://api.example.com")
 
     try:
         alert = await client.send_service_alert(
-            botId="my-bot",
-            roomId="room-123",
-            userId="system",
+            bot_id="my-bot",
+            room_id="room-123",
+            user_id="system",
             text="⚠️ System maintenance scheduled for tonight at 2 AM UTC",
         )
         print(f"✓ Service alert sent successfully!")
         print(f"  ID: {alert.id}")
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -98,7 +98,7 @@ async def example_message_with_file_upload():
     """Example 4: Send message with file upload."""
     print("\n=== Example 4: Message with File Upload ===")
 
-    client = ChatLayer(api_key="your-api-key-here", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key-here", base_url="https://api.example.com")
 
     try:
         # Read file bytes (in real usage, this would come from a file)
@@ -121,9 +121,9 @@ async def example_message_with_file_upload():
         print(f"  ID: {message.id}")
         if message.attachments:
             print(f"  Attachment: {message.attachments[0].url}")
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -133,7 +133,7 @@ async def example_message_with_file_by_url():
     """Example 5: Send message with file uploaded from URL."""
     print("\n=== Example 5: Message with File from URL ===")
 
-    client = ChatLayer(api_key="your-api-key-here", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key-here", base_url="https://api.example.com")
 
     try:
         message = await client.add_message_single(
@@ -148,9 +148,9 @@ async def example_message_with_file_by_url():
         )
         print(f"✓ Message with URL upload initiated!")
         print(f"  ID: {message.id}")
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -161,7 +161,7 @@ async def example_real_time_listening():
     print("\n=== Example 6: Real-time Message Listening ===")
     print("(This example will listen for 10 seconds)")
 
-    client = ChatLayer(
+    client = Botoraptor(
         api_key="your-api-key-here",
         base_url="https://api.example.com",
         bot_ids=["my-bot"],
@@ -190,9 +190,9 @@ async def example_real_time_listening():
         client.stop()
         print(f"✓ Received {message_count} messages in 10 seconds")
 
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -202,7 +202,7 @@ async def example_query_operations():
     """Example 7: Query operations."""
     print("\n=== Example 7: Query Operations ===")
 
-    client = ChatLayer(api_key="your-api-key-here", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key-here", base_url="https://api.example.com")
 
     try:
         # Get bots
@@ -214,18 +214,16 @@ async def example_query_operations():
         print(f"✓ Rooms: {len(rooms)} rooms")
 
         # Get messages
-        messages = await client.get_messages(
-            bot_id="my-bot", room_id="room-123", limit=5
-        )
+        messages = await client.get_messages(bot_id="my-bot", room_id="room-123", limit=5)
         print(f"✓ Messages: {len(messages)} messages")
 
         # Get client config
         config = await client.get_client_config()
         print(f"✓ Client config retrieved")
 
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -235,24 +233,22 @@ async def example_user_management():
     """Example 8: User management."""
     print("\n=== Example 8: User Management ===")
 
-    client = ChatLayer(api_key="your-api-key-here", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key-here", base_url="https://api.example.com")
 
     try:
         # Add user
         user = await client.add_user(
-            botId="my-bot", userId="new-user-999", username="newuser", name="New User"
+            bot_id="my-bot", user_id="new-user-999", username="newuser", name="New User"
         )
         print(f"✓ User added/updated: {user.username}")
 
         # Get messages for this user
-        messages = await client.get_messages(
-            botId="my-bot", userId="new-user-999", limit=10
-        )
-        print(f"✓ {len(messages)} messages for user")
+        messages = await client.get_messages(bot_id="my-bot", limit=10)
+        print(f"✓ {len(messages)} recent messages fetched for verification")
 
-    except ChatLayerAPIError as e:
+    except BotoraptorAPIError as e:
         print(f"✗ API error: {e.status_code} - {e.response_text}")
-    except ChatLayerError as e:
+    except BotoraptorError as e:
         print(f"✗ SDK error: {e}")
     finally:
         await client.close()
@@ -261,7 +257,7 @@ async def example_user_management():
 async def main():
     """Run all examples."""
     print("=" * 60)
-    print("ChatLayer SDK - Python Examples")
+    print("Botoraptor SDK - Python Examples")
     print("=" * 60)
     print("\n⚠️  Note: Replace 'your-api-key-here' with your actual API key")
     print("      to run these examples with a real connection.\n")

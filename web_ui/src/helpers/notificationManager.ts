@@ -128,7 +128,7 @@ class NotificationManager {
             const notification = new Notification(options.title, {
                 body: options.body,
                 icon: options.icon || '/favicon.png',
-                tag: options.tag || 'chatlayer-notification'
+                tag: options.tag || 'botoraptor-notification'
             });
 
             // Auto-close notification after 5 seconds

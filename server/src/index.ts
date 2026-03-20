@@ -1408,9 +1408,9 @@ interface WebhookSupport {
 const openapi = {
     openapi: "3.0.0",
     info: {
-        title: "ChatLayer API",
+        title: "Botoraptor API",
         version: "1.0.0",
-        description: "Simple human-in-the-loop chat middleware API",
+        description: "Simple human-in-the-loop chat middleware API with ChatLayer compatibility",
     },
     paths: {
         "/api/v1/health": {
@@ -1513,7 +1513,7 @@ app.get("/*path", (_req, res) => res.sendFile(path.join(distPath, "index.html"))
 
 const port = config.port || 31000;
 app.listen(port, () => {
-    console.log(`ChatLayer server listening on port ${port}`);
+    console.log(`Botoraptor server listening on port ${port}`);
     console.log(`Check web app at => http://localhost:${port}/`);
     console.log(`OpenAPI docs at http://localhost:${port}/api-docs`);
 });

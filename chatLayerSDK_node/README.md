@@ -1,6 +1,8 @@
-# ChatLayer SDK
+# Botoraptor SDK
 
-A lightweight, single-file TypeScript SDK for integrating with the ChatLayer server. Designed for **both** main web app integrations and external developer usage.
+A lightweight, single-file TypeScript SDK for integrating with the Botoraptor server. Designed for **both** main web app integrations and external developer usage.
+
+Legacy `ChatLayer` exports remain supported, but new integrations should import `Botoraptor` from `./botoraptor`.
 
 ## 📋 Overview
 
@@ -34,9 +36,9 @@ Or copy [`chatLayerSDK.ts`](chatLayerSDK.ts:1) directly into your project.
 ### Browser Integration
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
-const chatLayer = new ChatLayer({
+const botoraptor = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   botIds: ['bot-1', 'bot-2'],
@@ -44,15 +46,15 @@ const chatLayer = new ChatLayer({
 });
 
 // Listen for incoming messages
-chatLayer.onMessage((msg) => {
+botoraptor.onMessage((msg) => {
   console.log('New message:', msg);
 });
 
 // Start real-time updates
-chatLayer.start();
+botoraptor.start();
 
 // Send a message
-await chatLayer.addMessage({
+await botoraptor.addMessage({
   botId: 'bot-1',
   roomId: 'room-123',
   userId: 'user-456',
@@ -63,26 +65,26 @@ await chatLayer.addMessage({
 ### Node.js Bot Integration
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 import { readFileSync } from 'fs';
 
-const chatLayer = new ChatLayer({
+const botoraptor = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'http://localhost:3000',
   botId: 'my-bot',
 });
 
 // Start polling for messages
-chatLayer.start();
+botoraptor.start();
 
 // Listen for messages
-chatLayer.onMessage(async (msg) => {
+botoraptor.onMessage(async (msg) => {
   // Process incoming messages
   console.log('Received:', msg.text);
 
   // Send automated responses
   if (msg.text.toLowerCase().includes('help')) {
-    await chatLayer.addMessage({
+    await botoraptor.addMessage({
       ...msg,
       text: 'Here\'s the help information you requested.',
     });
@@ -91,7 +93,7 @@ chatLayer.onMessage(async (msg) => {
 
 // Upload files from disk
 const buffer = readFileSync('image.jpg');
-const attachments = await chatLayer.uploadFileBuffer(buffer, {
+const attachments = await botoraptor.uploadFileBuffer(buffer, {
   type: 'image',
   filename: 'uploaded-image.jpg',
   mime: 'image/jpeg',
@@ -178,7 +180,7 @@ interface RoomInfo {
 ### Basic Configuration
 
 ```typescript
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
 });
@@ -187,7 +189,7 @@ const chatLayer = new ChatLayer({
 ### Multiple Bot Support
 
 ```typescript
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   botIds: ['bot-1', 'bot-2', 'bot-3'],
@@ -198,11 +200,11 @@ const chatLayer = new ChatLayer({
 ### Error Handling
 
 ```typescript
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   onError: (error) => {
-    console.error('ChatLayer error:', error);
+    console.error('Botoraptor error:', error);
     // Implement retry logic, alerting, etc.
   },
 });
@@ -514,9 +516,9 @@ chatLayer.stop();
 ### Pattern 1: Real-time Message Handler with Auto-Response
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   botIds: ['my-bot'],
@@ -544,9 +546,9 @@ chatLayer.start();
 ### Pattern 2: Web App with File Upload
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   listenerType: 'ui',
@@ -585,11 +587,11 @@ chatLayer.start();
 ### Pattern 3: Node.js Bot with File Processing
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 import { readFileSync, createWriteStream } from 'fs';
 import { exec } from 'child_process';
 
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'http://localhost:3000',
   botId: 'image-bot',
@@ -642,9 +644,9 @@ chatLayer.start();
 ### Pattern 4: Multi-Bot Manager
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   botIds: ['sales-bot', 'support-bot', 'faq-bot'],
@@ -700,13 +702,13 @@ chatLayer.start();
 ### Pattern 5: Error Handling and Retry
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   onError: (error) => {
-    console.error('ChatLayer error:', error);
+    console.error('Botoraptor error:', error);
 
     // Log to monitoring service
     logToMonitoringService(error);
@@ -742,9 +744,9 @@ function sleep(ms: number) {
 ### Pattern 6: Message Pagination with Cursor
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   botId: 'bot-1',
@@ -787,9 +789,9 @@ console.log(`Total messages: ${messages.length}`);
 ### Pattern 7: Room Management
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
-const chatLayer = new ChatLayer({
+const chatLayer = new Botoraptor({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.chatlayer.com',
   botId: 'bot-1',
@@ -860,7 +862,7 @@ console.log(`Rooms with errors: ${errorRooms.map(r => r.roomId)}`);
 
 ## 🔧 Server Requirements
 
-The ChatLayer server must provide the following API endpoints:
+The Botoraptor server must provide the following API endpoints:
 
 - `POST /api/v1/addMessage` - Send messages
 - `POST /api/v1/addMessageSingle` - Send messages with files
@@ -873,7 +875,7 @@ The ChatLayer server must provide the following API endpoints:
 - `POST /api/v1/uploadFileByURL` - Upload files from URLs
 - `GET /api/v1/getUpdates` - Long-polling for real-time updates
 
-See the ChatLayer server README for server implementation details.
+See the Botoraptor server README for server implementation details.
 
 ---
 
@@ -882,15 +884,15 @@ See the ChatLayer server README for server implementation details.
 ### Scenario 1: Main Web Application
 
 ```typescript
-import ChatLayer from './chatLayerSDK';
+import Botoraptor from './botoraptor';
 
 class ChatInterface {
-  private chatLayer: ChatLayer;
+  private chatLayer: Botoraptor;
   private currentRoomId: string;
   private currentUser: User;
 
-  constructor(config: ChatLayerConfig) {
-    this.chatLayer = new ChatLayer(config);
+  constructor(config: BotoraptorConfig) {
+    this.chatLayer = new Botoraptor(config);
     this.currentRoomId = '';
   }
 
@@ -966,11 +968,11 @@ chat.connect('main-bot', 'room-123');
 ### Scenario 2: Third-Party Developer Integration
 
 ```typescript
-import ChatLayer from 'chatlayer-sdk';
+import Botoraptor from './botoraptor';
 
 // Initialize SDK with your API key
-const chatLayer = new ChatLayer({
-  apiKey: process.env.CHATLAYER_API_KEY,
+const chatLayer = new Botoraptor({
+  apiKey: process.env.BOTORAPTOR_API_KEY ?? process.env.CHATLAYER_API_KEY,
   baseUrl: 'https://api.chatlayer.com',
   botIds: ['your-bot-id'],
 });
@@ -1009,7 +1011,7 @@ chatLayer.onMessage(async (msg) => {
 // Start listening
 chatLayer.start();
 
-console.log('ChatLayer bot is running...');
+console.log('Botoraptor bot is running...');
 ```
 
 ---

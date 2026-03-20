@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  chatlayer:
+  botoraptor:
     build:
       context: .
       dockerfile: server/Dockerfile
-    container_name: chatlayer-server
+    container_name: botoraptor-server
     ports:
       - "31000:31000"
     environment:
@@ -13,9 +13,9 @@ services:
       - FILE_SIGNING_SECRET=${FILE_SIGNING_SECRET:-change-me-in-production}
     volumes:
       # Persist database file
-      - chatlayer_db:/app/db
+      - botoraptor_db:/app/db
       # Persist uploaded files
-      - chatlayer_uploads:/app/public/uploads
+      - botoraptor_uploads:/app/public/uploads
       # Mount config directory for easy configuration updates
       - ./server/config:/app/config:ro
     restart: unless-stopped
@@ -26,14 +26,18 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - chatlayer-network
+      - botoraptor-network
 
 volumes:
-  chatlayer_db:
+  botoraptor_db:
+    # Keep the legacy Docker volume name so existing deployments retain data.
+    name: chatlayer_db
     driver: local
-  chatlayer_uploads:
+  botoraptor_uploads:
+    # Keep the legacy Docker volume name so existing deployments retain uploads.
+    name: chatlayer_uploads
     driver: local
 
 networks:
-  chatlayer-network:
+  botoraptor-network:
     driver: bridge

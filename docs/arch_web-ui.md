@@ -1,12 +1,14 @@
 # Web UI Architecture
 
-Manager-facing web interface for ChatLayer — Vue 3 + Ionic.
+Manager-facing web interface for Botoraptor — Vue 3 + Ionic.
 
 ---
 
 ## Overview
 
-The Web UI is a single-page application (SPA) that allows managers to view conversations, send messages, and manage users. It's served as static files by the ChatLayer server.
+The Web UI is a single-page application (SPA) that allows managers to view conversations, send messages, and manage users. It's served as static files by the Botoraptor server.
+
+The UI now uses `botoraptor_api_key` as its primary localStorage key and still reads the legacy `chatlayer_api_key` value for compatibility.
 
 **Scope Boundary:**
 
@@ -108,7 +110,7 @@ API key authentication modal.
 **Flow:**
 1. User enters API key
 2. Key validated via test API call
-3. Key stored in localStorage
+3. Key stored in localStorage under `botoraptor_api_key` (and mirrored to the legacy key during transition)
 4. Modal dismissed on success
 
 ---
@@ -158,7 +160,7 @@ interface UIState {
 | `stopPolling()` | Stop long-polling |
 
 **Persistence:**
-- API key stored in localStorage
+- API key stored in localStorage (`botoraptor_api_key`, with fallback to legacy `chatlayer_api_key`)
 - Other state persisted to localforage for offline support
 
 ---
@@ -208,8 +210,8 @@ const api = axios.create({
 ```
 
 **Authentication:**
-- API key read from localStorage (`chatlayer_api_key`)
-- Added as `x-api-key` header to all requests
+- API key read from localStorage (`botoraptor_api_key`, with fallback to `chatlayer_api_key`)
+- Added as `Authorization: Bearer <api key>` header to all requests
 
 **Methods:**
 
@@ -369,7 +371,7 @@ VITE_API_BASE=https://api.your-domain.com
 
 ### API Key Storage
 
-- Stored in localStorage (`chatlayer_api_key`)
+- Stored in localStorage (`botoraptor_api_key`, with fallback to `chatlayer_api_key`)
 - Cleared on 401/403 responses
 - AuthModal shown when key missing/invalid
 

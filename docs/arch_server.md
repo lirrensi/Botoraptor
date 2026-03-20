@@ -1,12 +1,14 @@
 # Server Architecture
 
-Backend API for ChatLayer — Express.js + TypeScript + SQLite.
+Backend API for Botoraptor — Express.js + TypeScript + SQLite.
 
 ---
 
 ## Overview
 
 The server is a self-contained REST API that handles message storage, real-time updates via long-polling, webhook dispatch, and file uploads. It serves the Web UI as static files.
+
+Public branding uses `Botoraptor`; some internal paths and compatibility aliases still retain `ChatLayer` naming during the transition.
 
 **Scope Boundary:**
 

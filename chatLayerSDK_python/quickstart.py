@@ -1,38 +1,38 @@
 #!/usr/bin/env python3
 """
-Quick start script for ChatLayer SDK.
+Quick start script for Botoraptor SDK.
 Run this to see basic usage examples.
 """
 
 import asyncio
-from chatlayer_sdk import ChatLayer
+from botoraptor_sdk import Botoraptor, Message
 
 
 async def quickstart():
-    print("ChatLayer SDK Quickstart")
+    print("Botoraptor SDK Quickstart")
     print("=" * 60)
     print("\nThis example shows basic SDK usage.")
     print("Replace 'your-api-key' with your actual API key to run with real data.\n")
 
     # Initialize client
-    client = ChatLayer(api_key="your-api-key", base_url="https://api.example.com")
+    client = Botoraptor(api_key="your-api-key", base_url="https://api.example.com")
 
     try:
         # Example 1: Send a message
         print("1. Sending a message...")
         message = await client.add_message(
-            bot_id="my-bot",
-            room_id="room-123",
-            user_id="user-456",
-            text="Hello from Python SDK!",
+            Message.model_construct(
+                botId="my-bot",
+                roomId="room-123",
+                userId="user-456",
+                text="Hello from Python SDK!",
+            )
         )
         print(f"   ✓ Message sent! ID: {message.id}")
 
         # Example 2: Get messages
         print("\n2. Fetching messages...")
-        messages = await client.get_messages(
-            bot_id="my-bot", room_id="room-123", limit=5
-        )
+        messages = await client.get_messages(bot_id="my-bot", room_id="room-123", limit=5)
         print(f"   ✓ Found {len(messages)} messages")
 
         # Example 3: Get bots
