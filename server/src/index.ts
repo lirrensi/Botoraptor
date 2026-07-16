@@ -373,12 +373,19 @@ function sendError(res: express.Response, status: number, message: string, data:
 function apiKeyMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
     // Accept token via:
     //  - Authorization: Bearer <token>
+    //  - x-api-key header
+    //  - ?api_key= or ?apiKey= query parameter
     let key = req.header("authorization") as string | undefined;
 
     // If Authorization header with Bearer scheme was provided, extract the token
     if (typeof key === "string") {
         const m = key.match(/^Bearer\s+(.+)$/i);
         if (m) key = m[1];
+    }
+
+    // Fall back to x-api-key header or query params (matching verifySignedOrApiKey pattern)
+    if (!key) {
+        key = (req.header("x-api-key") || req.query.api_key || req.query.apiKey) as string;
     }
 
     const keys = (config.apiKeys || []) as string[];
@@ -849,7 +856,7 @@ app.post("/api/v1/uploadFileByURL", apiKeyMiddleware, uploadLimiter, async (req,
 //   - username, name: optional user data
 //   - messageType, text: optional message fields
 //   - meta: optional JSON string or object (if present in form it will be parsed)
-app.post("/api/v1/addMessageSingle", apiKeyMiddleware, upload.array("file"), async (req, res) => {
+app.post("/api/v1/addMessageSingle", apiKeyMiddleware, uploadLimiter, upload.array("file"), async (req, res) => {
     try {
         const files = (req as any).files as Express.Multer.File[] | undefined;
         const body = req.body || {};
@@ -1160,7 +1167,7 @@ app.post("/api/v1/addUser", apiKeyMiddleware, async (req, res) => {
  * @openapi
  * /getMessages:
  *   get:
- *     summary: Get messages (newest first, default limit 20)
+ *     summary: Get messages (newest first, default limit 50)
  *     parameters:
  *       - in: query
  *         name: botId
@@ -1180,7 +1187,7 @@ app.post("/api/v1/addUser", apiKeyMiddleware, async (req, res) => {
  *         name: limit
  *         schema:
  *           type: integer
- *         description: Max messages to return (default 20)
+ *         description: Max messages to return (default 50)
  *       - in: query
  *         name: types
  *         schema:
@@ -1191,13 +1198,31 @@ app.post("/api/v1/addUser", apiKeyMiddleware, async (req, res) => {
  */
 app.get("/api/v1/getMessages", apiKeyMiddleware, async (req, res) => {
     try {
-        const { botId, roomId, cursorId, limit, types } = req.query as any;
+        const { botId, roomId, cursorId, limit, types, userId, longPoll, timeout } = req.query as any;
         if (!botId) {
             return sendError(res, 400, "botId is required");
         }
+
+        if (longPoll === "true" || longPoll === "1") {
+            // Long-poll mode: wait for new messages
+            const pollTimeout = timeout ? parseInt(timeout, 10) : 60000;
+            const messages = await longPoll.waitForMessages([botId], pollTimeout, "ui");
+            // Filter by roomId and userId if provided
+            let filtered = messages;
+            if (roomId) filtered = filtered.filter((m: any) => m.roomId === roomId);
+            if (userId) filtered = filtered.filter((m: any) => m.userId === userId);
+            // Apply limit
+            const limitNum = limit ? parseInt(limit, 10) : 50;
+            if (filtered.length > limitNum) filtered = filtered.slice(0, limitNum);
+            populateSignedUrlsInMessages(filtered);
+            return sendSuccess(res, { messages: filtered });
+        }
+
+        // Normal mode: direct DB query
         const opts: any = {
             botId,
             roomId,
+            userId,
             cursorId: cursorId ? parseInt(cursorId, 10) : undefined,
             limit: limit ? parseInt(limit, 10) : undefined,
         };
@@ -1445,12 +1470,12 @@ const openapi = {
         },
         "/api/v1/getMessages": {
             get: {
-                summary: "Query messages (newest first, default limit 20)",
+                summary: "Query messages (newest first, default limit 50)",
                 parameters: [
                     { name: "botId", in: "query", required: true, schema: { type: "string" } },
                     { name: "roomId", in: "query", schema: { type: "string" } },
                     { name: "cursorId", in: "query", schema: { type: "integer" }, description: "Message ID cursor; returns messages older than this ID" },
-                    { name: "limit", in: "query", schema: { type: "integer" }, description: "Max messages to return (default 20)" },
+                    { name: "limit", in: "query", schema: { type: "integer" }, description: "Max messages to return (default 50)" },
                     { name: "types", in: "query", schema: { type: "string" } },
                 ],
                 responses: { "200": { description: "OK" } },
@@ -1500,6 +1525,23 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 // Serve raw OpenAPI JSON at /api/v1/openapi.json for tools that expect it.
 // Return the raw spec (not wrapped) to match common tooling expectations.
 app.get("/api/v1/openapi.json", (_req, res) => res.json(swaggerDoc));
+
+// POST /api/v1/sign-file
+// Generate a signed URL for an already-stored file.
+app.post("/api/v1/sign-file", apiKeyMiddleware, async (req, res) => {
+    try {
+        const { filename, expiresIn } = req.body || {};
+        if (!filename || typeof filename !== "string") {
+            return sendError(res, 400, "filename is required");
+        }
+        const expiresSec = typeof expiresIn === "number" && expiresIn > 0 ? expiresIn : 3600;
+        const url = generateSignedUrl(filename, expiresSec, filename);
+        return sendSuccess(res, { url });
+    } catch (e) {
+        console.error("sign-file error", e);
+        return sendError(res, 500, "internal_error", { details: String(e) });
+    }
+});
 
 // API 404 handler - return JSON 404 for unknown API routes
 app.use("/api", (_req, res) => {

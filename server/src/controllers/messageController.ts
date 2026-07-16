@@ -126,22 +126,26 @@ export async function addMessage(payload: AddMessageInput): Promise<Message> {
 export type GetMessagesOptions = {
     botId?: string;
     roomId?: string;
+    userId?: string;
     cursorId?: number;
     limit?: number;
     types?: Message["messageType"][];
+    longPoll?: boolean;
+    timeout?: number;
 };
 
 export async function getMessages(opts: GetMessagesOptions = {}) {
     const where: any = {};
     if (opts.botId) where.botId = opts.botId;
     if (opts.roomId) where.roomId = opts.roomId;
+    if (opts.userId) where.userId = opts.userId;
     if (typeof opts.cursorId === "number") where.id = { lt: opts.cursorId };
     if (opts.types && opts.types.length > 0) where.messageType = { in: opts.types };
 
     const messages = await prisma.message.findMany({
         where,
         orderBy: { createdAt: "desc" },
-        take: opts.limit ?? 20,
+        take: opts.limit ?? 50,
     });
 
     return messages as unknown as Message[];

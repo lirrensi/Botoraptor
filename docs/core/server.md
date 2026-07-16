@@ -1,4 +1,16 @@
-# Server Architecture
+---
+node_type: architecture
+title: Server Architecture & API Reference
+status: active
+updated: 2026-07-16
+tags: [server, architecture, api, typescript]
+links:
+  depends_on: [/overview/product.md]
+  documents: [/server/src/]
+  relates_to: [/core/web-ui.md, /nsdks/node.md, /nsdks/python.md, /nsdks/go.md, /nsdks/php.md]
+---
+
+# Server Architecture & API Reference
 
 Backend API for Botoraptor — Express.js + TypeScript + SQLite.
 
@@ -29,7 +41,8 @@ server/
 │   ├── controllers/
 │   │   └── messageController.ts  # Message CRUD operations
 │   └── helpers/
-│       └── logpollManager.ts     # Long-polling implementation
+│       ├── logpollManager.ts     # Long-polling implementation
+│       └── ssrfProtection.ts     # SSRF URL validation
 ├── prisma/
 │   └── schema.prisma         # Database schema
 ├── config/
@@ -41,7 +54,6 @@ server/
 ├── db/
 │   ├── dev.db                # Development database
 │   └── main.db               # Production database
-├── docs/                     # (deprecated — consolidated into docs/)
 ├── package.json
 ├── tsconfig.json
 └── ecosystem.config.cjs      # PM2 configuration
@@ -51,14 +63,16 @@ server/
 
 ## Technology Stack
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| TypeScript | 5.9.3 | Type-safe JavaScript |
-| Express.js | 5.2.1 | Web framework |
-| Prisma | 7.3.0 | Database ORM |
+| Technology | Version (range) | Purpose |
+|------------|----------------|---------|
+| TypeScript | ^5.7 | Type-safe JavaScript |
+| Express.js | ^5.1 | Web framework |
+| Prisma | ^7.3 | Database ORM |
 | SQLite | — | Embedded database |
 | Multer | — | File upload handling |
 | swagger-jsdoc | — | API documentation |
+| Helmet | — | Security headers |
+| express-rate-limit | — | Rate limiting |
 
 ---
 
@@ -75,41 +89,50 @@ model User {
   name      String?
   blocked   Boolean  @default(false)
   createdAt DateTime @default(now())
-  
-  messages  Message[]
-  
+
+  messages Message[] @relation("UserMessages")
+
   @@unique([botId, userId])
 }
 
 model Message {
-  id          String    @id @default(uuid())
+  id          Int      @id @default(autoincrement())
   botId       String
   roomId      String
   userId      String
-  username    String
-  name        String?
-  text        String?
+  text        String
   messageType String
   attachments Json?
   meta        Json?
-  createdAt   DateTime  @default(now())
-  
-  user        User      @relation(fields: [botId, userId], references: [botId, userId])
-  
+  createdAt   DateTime @default(now())
+
+  user User @relation("UserMessages", fields: [userId, botId], references: [userId, botId])
+
   @@index([botId, roomId])
   @@index([botId, userId])
   @@index([createdAt])
 }
 ```
 
+### MessageType Enum
+
+| Value | Description |
+|-------|-------------|
+| `user_message` | User typed a message to the bot |
+| `user_message_service` | User interaction with bot features |
+| `bot_message_service` | Automated bot response |
+| `manager_message` | Message from a human operator |
+| `service_call` | Special event requesting human takeover |
+| `error_message` | System error or failure notification |
+
 ### Indexes
 
 | Index | Fields | Purpose |
 |-------|--------|---------|
-| Primary | `id` | Unique message identifier |
+| Primary | `id` | Unique message identifier (auto-increment) |
 | Room | `botId, roomId` | Fetch messages by room |
-| User | `botId, userId` | Fetch messages by user |
-| Time | `createdAt` | Pagination and ordering |
+| User | `botId, userId` | Filter messages by user within a bot |
+| Created | `createdAt` | Efficient time-ordered queries |
 
 ---
 
@@ -117,15 +140,17 @@ model Message {
 
 ### Authentication
 
-All endpoints except `/health` and `/api/v1/getClientConfig` require API key authentication.
+All endpoints except `/api/v1/health` and `/api/v1/getClientConfig` require API key authentication.
 
 **Accepted formats:**
 
 ```http
 Authorization: Bearer your-api-key
 x-api-key: your-api-key
-?api_key=your-api-key
+GET /api/endpoint?api_key=your-api-key
 ```
+
+The middleware checks `Authorization: Bearer` first, then falls back to the `x-api-key` header, then to `api_key`/`apiKey` query parameters. File access endpoints additionally support signed URL authentication.
 
 ### Response Format
 
@@ -153,7 +178,7 @@ x-api-key: your-api-key
 #### Health Check
 
 ```
-GET /health
+GET /api/v1/health
 ```
 
 No authentication required. Returns server status.
@@ -162,6 +187,18 @@ No authentication required. Returns server status.
 ```json
 { "status": "ok" }
 ```
+
+---
+
+#### Validate API Key
+
+```
+GET /apiKeyCheck
+```
+
+Quick validation of an API key.
+
+**Response:** `200 OK` if valid, `403 Forbidden` if invalid.
 
 ---
 
@@ -177,7 +214,10 @@ No authentication required. Returns client-side configuration.
 ```json
 {
   "success": true,
-  "quickAnswersPreset": ["Hello!", "I'll help you.", "More details?"]
+  "data": {
+    "quickAnswersPreset": ["Hello! Thanks for reaching out!", "I'll help you with that right away.", "Could you provide more details?"],
+    "dangerousExtensions": [".exe", ".bat", ".cmd", ".ps1", ".sh", ".js", ".vbs", ".jar", ".msi", ".scr", ".pif", ".com", ".lnk"]
+  }
 }
 ```
 
@@ -220,20 +260,19 @@ Create a new message. Requires authentication.
 **Optional Fields:**
 - `name` (string) — Full name
 - `text` (string) — Message text
-- `messageType` (string) — One of: `user_message`, `user_message_service`, `bot_message_service`, `manager_message`, `service_call`
+- `messageType` (string) — Message type enum value
 - `attachments` (array) — Attachment objects
 - `meta` (object) — Custom metadata
 
-**Response:**
+**Response:** `201 Created`
 ```json
 {
   "success": true,
   "message": {
-    "id": "uuid-here",
+    "id": 1,
     "botId": "my-bot",
     "roomId": "room-123",
     "userId": "user-456",
-    "username": "john_doe",
     "text": "Hello, world!",
     "messageType": "user_message",
     "createdAt": "2026-01-31T12:00:00.000Z"
@@ -256,9 +295,7 @@ POST /api/v1/addMessageSingle
 
 Create a message with a single file upload in one request. Multipart/form-data.
 
-**Form Fields:**
-- `message` (JSON string) — Message object (same as `addMessage`)
-- `file` (file) — File to upload
+**Form Fields:** Individual fields (`botId`, `roomId`, `userId`, `username`, `name`, `messageType`, `text`, `meta`, `file`, `type`, `filename`)
 
 **Response:** Same as `addMessage` with populated `attachments`.
 
@@ -270,7 +307,7 @@ Create a message with a single file upload in one request. Multipart/form-data.
 GET /api/v1/getMessages
 ```
 
-Fetch messages with pagination. Supports long-polling.
+Fetch messages with pagination.
 
 **Query Parameters:**
 - `botId` (string, required) — Bot identifier
@@ -279,16 +316,16 @@ Fetch messages with pagination. Supports long-polling.
 - `limit` (number, default: 50) — Max messages to return
 - `cursorId` (string, optional) — Pagination cursor (message ID)
 - `types` (string, optional) — Comma-separated message types to filter
-- `longPoll` (boolean, default: false) — Enable long-polling
-- `timeout` (number, default: 30000) — Long-poll timeout in ms
+- `longPoll` (boolean, optional) — Enable long-polling mode; waits for new messages instead of returning immediately
+- `timeout` (number, optional) — Long-poll timeout in milliseconds (default: 60000)
 
 **Response:**
 ```json
 {
   "success": true,
   "messages": [
-    { "id": "...", "text": "...", "createdAt": "..." },
-    { "id": "...", "text": "...", "createdAt": "..." }
+    { "id": 1, "text": "...", "createdAt": "..." },
+    { "id": 2, "text": "...", "createdAt": "..." }
   ]
 }
 ```
@@ -310,8 +347,9 @@ Long-polling endpoint for real-time updates.
 
 **Query Parameters:**
 - `botIds` (string, optional) — Comma-separated bot IDs to listen for
-- `listenerType` (string, default: "bot") — Either "bot" or "ui"
-- `timeout` (number, default: 30000) — Max wait time in ms
+- `botId` (string, optional) — Legacy singular alias for `botIds`
+- `listenerType` (string, default: `"bot"`) — Either `"bot"` or `"ui"`
+- `timeoutMs` (number, default: 60000) — Max wait time in ms
 
 **Listener Types:**
 - `bot` — Receives `manager_message` events (for bots to deliver to users)
@@ -322,7 +360,7 @@ Long-polling endpoint for real-time updates.
 {
   "success": true,
   "messages": [
-    { "id": "...", "botId": "...", "roomId": "...", "text": "..." }
+    { "id": 1, "botId": "...", "roomId": "...", "text": "..." }
   ]
 }
 ```
@@ -378,20 +416,16 @@ Get room information with pagination.
       "users": [
         { "userId": "user-1", "username": "john" }
       ],
-      "lastMessage": { "text": "...", "createdAt": "..." }
+      "lastMessage": { "id": 1, "text": "...", "createdAt": "..." }
     }
   ]
 }
 ```
 
-**Pagination:**
-- Rooms returned by most recent activity (descending by last message `createdAt`)
-- Use `cursorId` from the last room to fetch more
-- Empty array means no more rooms
-
 **Performance:**
 - Users are fetched in a single batch query (no N+1)
 - Messages are not fully loaded into memory
+- Max 500 rooms per request
 
 ---
 
@@ -436,11 +470,11 @@ Create or retrieve a user.
 POST /api/v1/uploadFile
 ```
 
-Upload a file. Returns attachment metadata with signed URL.
+Upload one or more files. Returns attachment metadata with signed URL.
 
-**Request:** Multipart/form-data with file field.
+**Request:** Multipart/form-data with `file` field (supports multiple files).
 
-**Query Parameters:**
+**Additional Fields (in body):**
 - `type` (string, required) — One of: `image`, `video`, `document`, `file`
 
 **Response:**
@@ -472,42 +506,18 @@ Upload files from remote URLs. Server downloads and stores them.
 
 **Request Body:**
 ```json
-[
-  {
-    "url": "https://example.com/image.jpg",
-    "filename": "downloaded.jpg",
-    "type": "image"
-  }
-]
+{
+  "files": [
+    {
+      "url": "https://example.com/image.jpg",
+      "filename": "downloaded.jpg",
+      "type": "image"
+    }
+  ]
+}
 ```
 
 **Response:** Same as `uploadFile`.
-
----
-
-#### Sign File URL
-
-```
-POST /api/v1/sign-file
-```
-
-Generate a signed URL for file access.
-
-**Request Body:**
-```json
-{
-  "filename": "uuid.jpg",
-  "expiresIn": 3600
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "url": "/uploads/uuid.jpg?signature=...&expires=..."
-}
-```
 
 ---
 
@@ -527,7 +537,28 @@ Access uploaded files. Requires valid signature or API key.
 
 **Error Codes:**
 - 401 — Missing or invalid signature/API key
-- 410 — Signed URL expired
+- 403 — Signed URL expired
+- 404 — File not found
+
+---
+
+#### OpenAPI Spec
+
+```
+GET /api/v1/openapi.json
+```
+
+Returns the raw OpenAPI/Swagger specification.
+
+---
+
+#### SPA Fallback
+
+```
+GET /*
+```
+
+Any non-API route serves `index.html` for SPA client-side routing support.
 
 ---
 
@@ -541,9 +572,12 @@ The long-polling system is implemented in `src/helpers/logpollManager.ts`.
 
 1. Client makes request to `/api/v1/getUpdates`
 2. Server creates a "listener" object and waits
-3. When a new message is created, the server checks all active listeners
-4. Matching listeners receive the message and respond to their clients
-5. If timeout expires, server responds with empty array
+3. When a new message is created, the route handler calls `notifyListeners` on the manager
+4. Message-type filtering is done at the call site:
+   - `manager_message` messages notify `"bot"` listeners
+   - All other messages notify `"ui"` listeners
+5. Matching listeners receive the message and respond to their clients
+6. If timeout expires, server responds with empty array
 
 ### Listener Types
 
@@ -552,31 +586,9 @@ The long-polling system is implemented in `src/helpers/logpollManager.ts`.
 | `bot` | `manager_message` only | Bots that need to deliver manager messages to users |
 | `ui` | All messages | Manager web UI |
 
-### Message Routing
-
-```typescript
-// In logpollManager.ts
-function routeMessage(message: Message, listeners: Listener[]) {
-  for (const listener of listeners) {
-    // Bot listeners only get manager messages
-    if (listener.type === 'bot' && message.messageType !== 'manager_message') {
-      continue;
-    }
-    
-    // Filter by bot IDs if specified
-    if (listener.botIds && !listener.botIds.includes(message.botId)) {
-      continue;
-    }
-    
-    // Deliver to listener
-    listener.resolve([message]);
-  }
-}
-```
-
 ### Timeout Behavior
 
-- Default timeout: 30 seconds
+- Default timeout: 60 seconds
 - Client should reconnect immediately after receiving response
 - Exponential backoff recommended on errors
 
@@ -596,6 +608,7 @@ Webhooks are configured in `config/server.json`:
       "headers": {
         "Authorization": "Bearer webhook-secret"
       },
+      "query": { "source": "botoraptor" },
       "retry": {
         "attempts": 3,
         "delay_ms": 3000
@@ -607,8 +620,7 @@ Webhooks are configured in `config/server.json`:
 
 ### Trigger Conditions
 
-Webhooks are triggered when:
-- A message with `messageType === "manager_message"` is created
+Webhooks are triggered when a message with `messageType === "manager_message"` is created.
 
 ### Payload Format
 
@@ -617,7 +629,7 @@ Webhooks are triggered when:
   "success": true,
   "messages": [
     {
-      "id": "uuid",
+      "id": 1,
       "botId": "bot-1",
       "roomId": "room-123",
       "userId": "manager",
@@ -690,21 +702,21 @@ A sweep job runs periodically to delete expired files:
 
 ### Authentication
 
-All endpoints except `/health` and `/api/v1/getClientConfig` require API key authentication.
+All endpoints except `/api/v1/health` and `/api/v1/getClientConfig` require API key authentication.
 
 **Accepted formats:**
 - `Authorization: Bearer <api-key>`
 - `x-api-key: <api-key>`
-- Query param: `?api_key=<api-key>`
+- `?api_key=<api-key>` or `?apiKey=<api-key>` query parameter
 
 **Key Management:**
-- Keys SHOULD be loaded from environment variables (`API_KEYS` comma-separated, or `API_KEY_1`, `API_KEY_2`, etc.)
+- Keys SHOULD be loaded from environment variables (`API_KEYS` comma-separated)
 - Config file storage is for development only
 - Each key grants full read/write access
 
 ### Rate Limiting
 
-Rate limiting MUST be enabled on all endpoints:
+Rate limiting is applied to all endpoints:
 
 | Endpoint Type | Limit | Window |
 |---------------|-------|--------|
@@ -740,7 +752,10 @@ Configuration:
 
 ### SSRF Protection
 
-`uploadFileByURL` endpoint MUST block requests to cloud metadata endpoints:
+`uploadFileByURL` endpoint validates URLs before fetching:
+
+- Rejects non-http(s) protocols
+- Blocks cloud metadata endpoints (AWS/GCP/Azure/Alibaba)
 
 | Blocked IP/Host | Reason |
 |-----------------|--------|
@@ -765,11 +780,20 @@ Configuration:
 | `fileTTLSeconds` | number | 604800 | File lifetime in seconds (7 days) |
 | `webhooks` | array | [] | Webhook configurations |
 
+### Client Configuration (`config/client.json`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `quickAnswersPreset` | string[] | Pre-defined quick reply messages for managers |
+| `dangerousExtensions` | string[] | File extensions flagged as potentially dangerous |
+
 ### Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `FILE_SIGNING_SECRET` | Yes | HMAC secret for file URLs |
+| `DATABASE_URL_PROD` | No | Production database path (defaults to `file:./db/main.db`) |
+| `DATABASE_URL_DEV` | No | Development database path (defaults to `file:./db/dev.db`) |
 | `NODE_ENV` | No | Set to `production` for production mode |
 | `API_KEYS` | No | Comma-separated API keys (alternative to config file) |
 
@@ -797,7 +821,9 @@ pm2 start ecosystem.config.cjs
 
 ### Docker
 
-See `DOCKER.md` for Docker deployment details.
+```bash
+docker-compose up -d
+```
 
 ---
 
@@ -821,8 +847,8 @@ See `DOCKER.md` for Docker deployment details.
 | 201 | Created (for message creation) |
 | 400 | Bad request (missing/invalid fields) |
 | 401 | Unauthorized (missing/invalid API key) |
+| 403 | Forbidden (expired signature, invalid key) |
 | 404 | Not found |
-| 410 | Gone (signed URL expired) |
 | 413 | Payload too large (file size exceeded) |
 | 500 | Internal server error |
 
@@ -832,7 +858,7 @@ See `DOCKER.md` for Docker deployment details.
 
 | Invariant | Description |
 |-----------|-------------|
-| API key required | All endpoints except `/health` and `/getClientConfig` MUST require valid API key |
+| API key required | All endpoints except `/api/v1/health` and `/api/v1/getClientConfig` MUST require valid API key |
 | Message ordering | Messages MUST be returned newest-first |
 | User auto-creation | Adding a message MUST create user if not exists |
 | Webhook non-blocking | Webhook failures MUST NOT block message creation |
@@ -848,21 +874,22 @@ See `DOCKER.md` for Docker deployment details.
 
 ## Design Decisions
 
-| Decision | Why | Confidence |
-|----------|-----|------------|
-| SQLite database | Self-contained, no external DB needed, sufficient for expected scale | High |
-| Long-polling over WebSockets | Simpler, works through proxies, sufficient for chat use case | High |
-| UUID message IDs | No coordination needed, safe for distributed systems | High |
-| Signed URLs for files | Stateless auth, no session management needed | High |
-| Prisma ORM | Type-safe, migrations, good DX | High |
+| Decision | Why |
+|----------|-----|
+| SQLite database | Self-contained, no external DB needed, sufficient for expected scale |
+| Long-polling over WebSockets | Simpler, works through proxies, sufficient for chat use case |
+| Auto-increment message IDs | Simpler for single-server deployment |
+| Signed URLs for files | Stateless auth, no session management needed |
+| Prisma ORM | Type-safe, migrations, good DX |
 
 ---
 
 ## Implementation Pointers
 
 - **Entry point**: `src/index.ts`
-- **Routes**: `src/index.ts` (lines 100-500)
+- **Routes**: `src/index.ts` (routes defined inline)
 - **Message controller**: `src/controllers/messageController.ts`
 - **Long-poll manager**: `src/helpers/logpollManager.ts`
+- **SSRF validation**: `src/helpers/ssrfProtection.ts`
 - **Database schema**: `prisma/schema.prisma`
 - **Configuration**: `config/server.json`, `config/client.json`

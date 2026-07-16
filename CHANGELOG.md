@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [3.2.0] - 2026-07-16
+
+### Added
+
+- **Multi-method API key auth**: `apiKeyMiddleware` now accepts `x-api-key` header and `api_key`/`apiKey` query parameters in addition to `Authorization: Bearer` (matching the existing `verifySignedOrApiKey` pattern).
+- **`POST /api/v1/sign-file` endpoint**: Generate signed URLs for stored files via public API.
+- **`getMessages` long-polling mode**: Pass `?longPoll=true` to wait for new messages directly on the messages endpoint, with optional `userId` filter and `timeout` parameter.
+- **Database indexes**: Added `@@index([botId, userId])` and `@@index([createdAt])` to Message schema for query performance.
+
+### Fixed
+
+- **`addMessageSingle` rate limiting**: Added missing `uploadLimiter` middleware to the route, aligning with `uploadFile` and `uploadFileByURL`.
+
+### Changed
+
+- **`getMessages` default limit**: Increased from 20 to 50 for consistency with `getRooms` pagination. Clients passing an explicit `limit` parameter are unaffected.
+- **SDK documentation synced**: All four NSDK docs (Python, Node, Go, PHP) corrected to match actual code signatures, types, and defaults. Python Quick Start now uses correct `Message` object-based API.
+
+---
+
 ## [3.1.0] - 2026-02-23
 
 ### Security

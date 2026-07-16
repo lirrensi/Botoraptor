@@ -1,4 +1,16 @@
-# Python SDK Architecture
+---
+node_type: reference
+title: Python SDK Reference
+status: active
+updated: 2026-07-16 (code-synced)
+tags: [sdk, nsdk, python]
+links:
+  depends_on: [/core/server.md]
+  documents: [/chatLayerSDK_python/]
+  relates_to: [/nsdks/node.md, /nsdks/go.md, /nsdks/php.md]
+---
+
+# Python SDK Reference
 
 Async Python SDK for Botoraptor — httpx + pydantic.
 
@@ -8,7 +20,7 @@ Async Python SDK for Botoraptor — httpx + pydantic.
 
 An async-first Python client for integrating bots with Botoraptor. Uses `httpx` for HTTP and `pydantic` for type validation.
 
-Public docs now prefer `Botoraptor`, while the legacy `chatlayer_sdk` package remains available as a compatibility alias.
+The SDK exports both `Botoraptor` (preferred) and `ChatLayer` (legacy compatibility alias). The package `chatlayer_sdk` remains available during transition.
 
 **Scope Boundary:**
 
@@ -30,7 +42,7 @@ pip install chatlayer-sdk
 
 ```python
 import asyncio
-from botoraptor_sdk import Botoraptor
+from botoraptor_sdk import Botoraptor, Message
 
 async def main():
     client = Botoraptor(
@@ -48,12 +60,13 @@ async def main():
     client.start()
 
     # Send a message
-    await client.add_message({
-        "bot_id": "my-bot",
-        "room_id": "room-123",
-        "user_id": "user-456",
-        "text": "Hello!",
-    })
+    msg = Message(
+        bot_id="my-bot",
+        room_id="room-123",
+        user_id="user-456",
+        text="Hello!",
+    )
+    await client.add_message(msg)
 
     # Run for a while
     await asyncio.sleep(60)
@@ -69,9 +82,9 @@ asyncio.run(main())
 ## Configuration
 
 ```python
-from botoraptor_sdk import Botoraptor, BotoraptorConfig
+from botoraptor_sdk import Botoraptor, ChatLayerConfig  # or BotoraptorConfig (alias)
 
-config = BotoraptorConfig(
+config = ChatLayerConfig(
     api_key="your-api-key",
     base_url="https://api.example.com",
     bot_ids=["bot-1", "bot-2"],
@@ -89,12 +102,12 @@ client = Botoraptor(**config.model_dump())
 
 ### Message Operations
 
-| Method | Description |
-|--------|-------------|
-| `add_message(msg)` | Send a message |
-| `add_manager_message(msg)` | Send as manager |
-| `send_service_alert(msg)` | Send system alert |
-| `get_messages(params)` | Fetch messages with pagination |
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `add_message` | `(message: Message)` | Send a message (takes a `Message` object) |
+| `add_manager_message` | `(bot_id, room_id, user_id, text, **kwargs)` | Send as manager |
+| `send_service_alert` | `(bot_id, room_id, user_id, text, **kwargs)` | Send system alert |
+| `get_messages` | `(bot_id=None, room_id=None, limit=None, cursor_id=None, types=None)` | Fetch messages with pagination |
 
 ### File Operations
 
@@ -109,25 +122,62 @@ client = Botoraptor(**config.model_dump())
 | Method | Description |
 |--------|-------------|
 | `get_bots()` | List all bot IDs |
-| `get_rooms(params)` | Get room information |
+| `get_rooms(bot_id=None, message_type=None, depth=None)` | Get room information |
 | `get_client_config()` | Get client configuration |
+
+### User Operations
+
+| Method | Description |
+|--------|-------------|
+| `add_user(bot_id, user_id, username, name)` | Create or return a user |
 
 ### Real-time
 
 | Method | Description |
 |--------|-------------|
 | `on_message(callback)` | Register async message handler |
-| `start()` | Start long-polling |
+| `start(bot_ids=None, listener_type=None)` | Start long-polling |
 | `stop()` | Stop polling |
+| `close()` | Close HTTP session |
+
+### Class Methods
+
+| Method | Description |
+|--------|-------------|
+| `from_config(cls, config)` | Create client from `ChatLayerConfig` object |
 
 ---
 
 ## Types
 
 ```python
-from botoraptor_sdk import Message, Attachment, User, MessageType
+from botoraptor_sdk import (
+    Message, MessageType, Attachment, AttachmentType,
+    User, RoomInfo, BotoraptorError, BotoraptorAPIError,
+)
 
-# Message
+# Message type enum
+class MessageType(str, Enum):
+    USER_MESSAGE = "user_message"
+    USER_MESSAGE_SERVICE = "user_message_service"
+    BOT_MESSAGE_SERVICE = "bot_message_service"
+    MANAGER_MESSAGE = "manager_message"
+    SERVICE_CALL = "service_call"
+    ERROR_MESSAGE = "error_message"
+
+# Attachment type enum
+class AttachmentType(str, Enum):
+    IMAGE = "image"
+    VIDEO = "video"
+    DOCUMENT = "document"
+    FILE = "file"
+
+# Listener type enum
+class ListenerType(str, Enum):
+    BOT = "bot"
+    UI = "ui"
+
+# Message model
 message = Message(
     bot_id="bot-1",
     room_id="room-1",
@@ -137,13 +187,23 @@ message = Message(
     message_type=MessageType.USER_MESSAGE,
 )
 
-# Attachment
+# Attachment model
 attachment = Attachment(
     type=AttachmentType.IMAGE,
     url="https://example.com/image.jpg",
     filename="photo.jpg",
 )
 ```
+
+**Additional Models:**
+- `User` — User data (botId, userId, username, name, blocked, createdAt)
+- `RoomInfo` — Room summary (botId, roomId, users, lastMessage)
+- `FileUploadOptions` — File upload options
+- `FileUploadByUrlOptions` — URL upload options
+- `GetMessagesParams` — Message query parameters
+- `GetRoomsParams` — Room query parameters
+- `ServerResponse` — Generic API response wrapper
+- `RoomsResponse` — GetRooms response
 
 ---
 
@@ -153,8 +213,9 @@ Recommended for proper resource cleanup:
 
 ```python
 async with Botoraptor(api_key="key", base_url="...") as client:
-    message = await client.add_message({...})
-    # Automatic cleanup on exit
+    msg = Message(bot_id="bot-1", room_id="room-1", user_id="user-1", text="Hello")
+    message = await client.add_message(msg)
+    # Automatic cleanup on exit (close() called)
 ```
 
 ---
@@ -186,7 +247,7 @@ await client.close()
 from botoraptor_sdk import BotoraptorError, BotoraptorAPIError
 
 try:
-    await client.add_message(msg)
+    await client.add_message(...)
 except BotoraptorAPIError as e:
     print(f"API error {e.status_code}: {e.response_text}")
 except BotoraptorError as e:
@@ -200,12 +261,6 @@ except BotoraptorError as e:
 - Python 3.10+
 - `httpx` — HTTP client
 - `pydantic` — Data validation
-
----
-
-## API Reference
-
-For complete API details, see [arch_server.md](arch_server.md).
 
 ---
 

@@ -182,7 +182,7 @@ botoraptor.start();
 
 ## Security
 
-Botoraptor v3.1+ includes security hardening:
+Botoraptor v3.2+ includes security hardening:
 
 - **Rate limiting** on all endpoints
 - **SSRF protection** for URL-based file uploads
@@ -196,16 +196,19 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ## Documentation
 
+The full docs are organized into two main sections — **Core** (server + UI) and **NSDKs** (per-language SDKs):
+
 | Document | Description |
 |----------|-------------|
-| [docs/product.md](docs/product.md) | Product specification |
-| [docs/arch_index.md](docs/arch_index.md) | Architecture index |
-| [docs/arch_server.md](docs/arch_server.md) | Server architecture & API reference |
-| [docs/arch_web-ui.md](docs/arch_web-ui.md) | Web UI architecture |
-| [docs/arch_sdk-node.md](docs/arch_sdk-node.md) | Node SDK reference |
-| [docs/arch_sdk-python.md](docs/arch_sdk-python.md) | Python SDK reference |
-| [docs/arch_sdk-go.md](docs/arch_sdk-go.md) | Go SDK reference |
-| [docs/arch_sdk-php.md](docs/arch_sdk-php.md) | PHP SDK reference |
+| [docs/INDEX.md](docs/INDEX.md) | Documentation master index |
+| [docs/overview/product.md](docs/overview/product.md) | Product overview, data model, core concepts |
+| [docs/core/server.md](docs/core/server.md) | Server architecture & full API reference |
+| [docs/core/web-ui.md](docs/core/web-ui.md) | Web UI architecture & features |
+| [docs/nsdks/node.md](docs/nsdks/node.md) | Node.js/TypeScript SDK reference |
+| [docs/nsdks/python.md](docs/nsdks/python.md) | Python SDK reference (async) |
+| [docs/nsdks/go.md](docs/nsdks/go.md) | Go SDK reference |
+| [docs/nsdks/php.md](docs/nsdks/php.md) | PHP SDK reference |
+| [docs/ontology.md](docs/ontology.md) | Documentation ontology registry |
 
 ---
 

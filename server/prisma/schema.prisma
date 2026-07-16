@@ -45,4 +45,6 @@ model Message {
   user        User?       @relation("UserMessages", fields: [userId, botId], references: [userId, botId])
 
   @@index([botId, roomId])
+  @@index([botId, userId])
+  @@index([createdAt])
 }

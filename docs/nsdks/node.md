@@ -1,4 +1,16 @@
-# Node SDK Architecture
+---
+node_type: reference
+title: Node SDK Reference
+status: active
+updated: 2026-07-16 (code-synced)
+tags: [sdk, nsdk, node, typescript]
+links:
+  depends_on: [/core/server.md]
+  documents: [/chatLayerSDK_node/]
+  relates_to: [/nsdks/python.md, /nsdks/go.md, /nsdks/php.md]
+---
+
+# Node SDK Reference
 
 TypeScript SDK for Botoraptor — zero dependencies, works in Node.js and browsers.
 
@@ -8,7 +20,7 @@ TypeScript SDK for Botoraptor — zero dependencies, works in Node.js and browse
 
 A lightweight client for integrating bots and web applications with Botoraptor. Uses native `fetch` API.
 
-Public docs now prefer `Botoraptor`, while the legacy `ChatLayer` export remains available as a compatibility alias.
+The SDK exports both `Botoraptor` (preferred) and `ChatLayer` (legacy compatibility alias). Public docs prefer `Botoraptor`.
 
 **Scope Boundary:**
 
@@ -66,11 +78,13 @@ interface BotoraptorConfig {
   apiKey: string;              // Required
   baseUrl?: string;            // Default: "/"
   botIds?: string[];           // Bot IDs to listen for
-  listenerType?: 'bot' | 'ui'; // Default: "bot"
+  listenerType?: 'bot' | 'ui'; // Default: "bot" if botIds provided, otherwise "ui"
   timeoutMs?: number;          // Default: 60000
   pollDelayMs?: number;        // Default: 1000
   onError?: (err: any) => void;
 }
+
+// BotoraptorConfig is an alias for ChatLayerConfig
 ```
 
 ---
@@ -94,6 +108,12 @@ interface BotoraptorConfig {
 | `uploadFileBuffer(buffer, options)` | Upload Buffer (Node.js) |
 | `uploadFileByURL(files)` | Upload from URLs |
 | `addMessageSingle(msg, file, options)` | Send message with file in one request |
+
+### User Operations
+
+| Method | Description |
+|--------|-------------|
+| `addUser(user)` | Create or return a user (POST `/api/v1/addUser`) |
 
 ### Query Operations
 
@@ -122,20 +142,41 @@ interface Message {
   roomId: string;
   userId: string;
   username?: string;
+  name?: string | null;
   text?: string;
   messageType?: MessageType;
-  attachments?: Attachment[];
-  meta?: Record<string, any>;
+  attachments?: Attachment[] | null;
+  meta?: Record<string, any> | null;
   createdAt?: string;
 }
 
 interface Attachment {
   id?: string;
   type: 'image' | 'video' | 'document' | 'file';
-  url?: string;
-  filename?: string;
+  isExternal?: boolean;
+  url?: string | null;
+  filename?: string | null;
+  original_name?: string | null;
   mime_type?: string;
   size?: number;
+  createdAt?: string | null;
+}
+
+interface User {
+  id?: number;
+  botId: string;
+  userId: string;
+  username: string;
+  name?: string | null;
+  blocked?: boolean;
+  createdAt?: string;
+}
+
+interface RoomInfo {
+  botId: string;
+  roomId: string;
+  users: User[];
+  lastMessage: Message | null;
 }
 
 type MessageType =
@@ -143,7 +184,8 @@ type MessageType =
   | 'user_message_service'
   | 'bot_message_service'
   | 'manager_message'
-  | 'service_call';
+  | 'service_call'
+  | 'error_message';
 ```
 
 ---
@@ -158,7 +200,6 @@ client.onMessage((msg) => {
 });
 
 client.start();  // Begins polling
-
 // Later...
 client.stop();   // Stops polling
 ```
@@ -202,12 +243,6 @@ try {
 **Requirements:**
 - Node.js 18+ (for native `fetch`)
 - Modern browsers with ES6 support
-
----
-
-## API Reference
-
-For complete API details, see [arch_server.md](arch_server.md).
 
 ---
 

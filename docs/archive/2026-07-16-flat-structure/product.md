@@ -1,3 +1,13 @@
+---
+node_type: overview
+title: Botoraptor Product (legacy flat)
+status: archived
+updated: 2026-07-16
+tags: [product, legacy]
+links:
+  supersedes: [/overview/product.md]
+---
+
 # Botoraptor
 
 **Human-in-the-loop conversation middleware for customer-facing bots**

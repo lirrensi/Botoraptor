@@ -1,3 +1,13 @@
+---
+node_type: index
+title: Architecture Index (legacy flat)
+status: archived
+updated: 2026-07-16
+tags: [architecture, legacy]
+links:
+  supersedes: [/core/server.md, /nsdks/node.md, /nsdks/python.md, /nsdks/go.md, /nsdks/php.md]
+---
+
 # Architecture Index
 
 ## Components

@@ -45,8 +45,9 @@ FILE_SIGNING_SECRET=your-secret-key
 
 ## Documentation
 
-- **Architecture & API**: [docs/arch_server.md](../docs/arch_server.md)
-- **Product Spec**: [docs/product.md](../docs/product.md)
+- **Architecture & API**: [docs/core/server.md](../docs/core/server.md)
+- **Product Overview**: [docs/overview/product.md](../docs/overview/product.md)
+- **Full Doc Index**: [docs/INDEX.md](../docs/INDEX.md)
 
 ## Project Structure
 
